@@ -15,11 +15,14 @@ def PIL2numpy(img):
     return np.array(img)
 
 def imread(path, resize=None):
-    with Image.open(path) as img:
-        image = img.convert('RGB')
-        if resize is not None:
-            image = image.resize(resize)
-        return image
+    try:
+        with Image.open(path) as img:
+            image = img.convert('RGB')
+            if resize is not None:
+                image = image.resize(resize)
+            return image
+    except Exception as e:
+        print("\nOops!", e.__class__, "occurred. Path: ", path)
 
 def JSON_2_tube(json_file):
     """

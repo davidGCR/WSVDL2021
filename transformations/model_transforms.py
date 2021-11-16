@@ -93,8 +93,8 @@ def resnet_transf():
     input_size = (224,224)
     T = {
             'train': transforms.Compose([
-                transforms.RandomResizedCrop(input_size),
-                transforms.RandomHorizontalFlip(),
+                # transforms.RandomResizedCrop(input_size),
+                # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=mean, std=std)
             ]),
@@ -102,7 +102,7 @@ def resnet_transf():
                 # transforms.Resize(input_size),
                 # transforms.CenterCrop(input_size),
                 transforms.ToTensor(),
-                # transforms.Normalize(mean=mean, std=std)
+                transforms.Normalize(mean=mean, std=std)
             ]),
         }
     return T  

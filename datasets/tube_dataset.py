@@ -81,15 +81,15 @@ class TubeDataset(data.Dataset):
         return sampler
     
     def build_frame_name(self, path, frame_number, frames_names_list):
-        if self.dataset == 'rwf-2000':
+        if self.dataset == RWF_DATASET:
             return os.path.join(path,'frame{}.jpg'.format(frame_number+1))
-        elif self.dataset == 'hockey':
+        elif self.dataset == HOCKEY_DATASET:
             return os.path.join(path,'frame{:03}.jpg'.format(frame_number+1))
-        elif self.dataset == 'RealLifeViolenceDataset':
+        elif self.dataset == RLVSD_DATASET:
             return os.path.join(path,'{:06}.jpg'.format(frame_number))
-        elif self.dataset == 'UCFCrime':
+        elif self.dataset == UCFCrime_DATASET:
             return os.path.join(path,'{:06}.jpg'.format(frame_number))
-        elif self.dataset == 'UCFCrime_Reduced':
+        elif self.dataset == UCFCrimeReduced_DATASET:
             frame_idx = frame_number
             pth = os.path.join(path, frames_names_list[frame_idx])
             return pth
@@ -134,6 +134,7 @@ class TubeDataset(data.Dataset):
             tube_boxes = [self.__format_bbox__(t) for t in tube_boxes]
             
             # print('\tube_boxes: ', tube_boxes, len(tube_boxes))
+            # print('\t tube_images: ', type(tube_images), type(tube_images[0]))
             raw_clip_images = tube_images.copy()
             if self.config['input_1']['spatial_transform']:
                 tube_images_t, tube_boxes_t, t_combination = self.config['input_1']['spatial_transform'](tube_images, tube_boxes)

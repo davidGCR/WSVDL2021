@@ -3,6 +3,7 @@ from datasets.make_dataset import MakeRWF2000, MakeHockeyDataset, MakeRLVDDatase
 from datasets.make_UCFCrime import MakeUCFCrime
 
 def load_make_dataset(cfg,
+                      env_datasets_root,
                       train=True,
                       category=2, 
                       shuffle=False):
@@ -10,6 +11,7 @@ def load_make_dataset(cfg,
 
     Args:
         cfg (yaml): cfg.DATA
+        env_datasets_root (str): Path to datasets folder    
         train (bool, optional): [description]. Defaults to True.
         category (int, optional): [description]. Defaults to 2.
         shuffle (bool, optional): [description]. Defaults to False.
@@ -17,11 +19,13 @@ def load_make_dataset(cfg,
     Returns:
         [type]: [description]
     """
-    home_path =     cfg.ROOT
+    home_path =     env_datasets_root
     at_path =       cfg.ACTION_TUBES_FOLDER
     dataset_name =  cfg.DATASET
     cv_split =      cfg.CV_SPLIT
     load_gt =       cfg.LOAD_GROUND_TRUTH
+
+    # print('home_path: ', home_path)
     if dataset_name == RWF_DATASET:
         make_dataset = MakeRWF2000(
             root=os.path.join(home_path, 'RWF-2000/frames'),
@@ -63,5 +67,8 @@ def load_make_dataset(cfg,
             action_tubes_path=os.path.join(home_path, at_path, 'UCFCrime_Reduced'),
             train=train,
             ground_truth_tubes=load_gt)
+    else:
+        print('Invalid DATASET name!!!')
+        exit()
 
     return make_dataset

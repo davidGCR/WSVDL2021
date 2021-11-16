@@ -17,8 +17,7 @@ FEAT_EXT_RESNEXT_S3D = "resnetxt+s3d"
 FEAT_EXT_RESNET = "resnet"
 
 RWF_DATASET = "RWF-2000"
-RLSV_DATASET = "RealLifeViolenceDataset"
-HOCKEY_DATASET = "hockey"
+HOCKEY_DATASET = "HockeyFightsDATASET"
 RLVSD_DATASET = "RealLifeViolenceDataset"
 UCFCrime_DATASET = "UCFCrime"
 UCFCrimeReduced_DATASET = "UCFCrime_Reduced"
@@ -78,3 +77,8 @@ DYNAMIC_IMAGE_KEYFRAME = 3
 
 DYN_IMAGE = "dynamic-image"
 RGB_FRAME = "rgb"
+
+from pathlib import Path
+WORK_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parents[0]
+
+# print('WORK_DIR: ', type(WORK_DIR))

@@ -17,23 +17,22 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
 
-def main():
+def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
-    cfg.merge_from_file("../configs/TWOSTREAM_16RGB_DYNIMG.yaml")
-    cfg.ENVIRONMENT.DATASETS_ROOT = HOME_OSX
+    
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_DYNIMG.yaml")
+    cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     print(cfg)
 
-    # test_model(cfg.MODEL)
-
-    # from test_dataset import test_dataset
-    # test_dataset(cfg)
     device = get_torch_device()
     make_dataset_train = load_make_dataset(cfg.DATA,
+                                     env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
                                      train=True,
                                      category=2,
                                      shuffle=False)
     make_dataset_val = load_make_dataset(cfg.DATA,
+                                     env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
                                      train=False,
                                      category=2,
                                      shuffle=False)                           
@@ -52,17 +51,17 @@ def main():
     # print('tensorboard dir:', tsb_path)                                                
     writer = SummaryWriter(tsb_path_folder)
 
-    if  cfg.SOLVER.OPTIMIZER == 'Adadelta':
+    if  cfg.SOLVER.OPTIMIZER.NAME == 'Adadelta':
         optimizer = torch.optim.Adadelta(
             params, 
             lr=cfg.SOLVER.LR, 
             eps=1e-8)
-    elif cfg.SOLVER.OPTIMIZER == 'SGD':
+    elif cfg.SOLVER.OPTIMIZER.NAME == 'SGD':
         optimizer = torch.optim.SGD(params=params,
                                     lr=cfg.SOLVER.LR,
                                     momentum=0.9,
                                     weight_decay=1e-3)
-    elif cfg.SOLVER.OPTIMIZER == 'Adam':
+    elif cfg.SOLVER.OPTIMIZER.NAME == 'Adam':
         optimizer = torch.optim.Adam(
             params, 
             lr=cfg.SOLVER.LR, 
@@ -124,4 +123,5 @@ def main():
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    main()
+    h_path = HOME_UBUNTU
+    main(h_path)
