@@ -1,0 +1,235 @@
+import torch
+from torch import nn
+from models._3d_backbones import Backbone3DResNet, BackboneI3D
+from models._2d_backbones import Backbone2DResNet
+from models.roi_extractor_3d import SingleRoIExtractor3D
+from models.cfam import CFAMBlock 
+from torch.nn import functional as F
+# from models.v_d_config import *
+
+from torchvision.ops.roi_align import RoIAlign
+
+class RoiPoolLayer(nn.Module):
+    def __init__(self,roi_layer_type='RoIAlign',
+                      roi_layer_output=8,
+                      roi_with_temporal_pool=True,
+                      roi_spatial_scale=16,
+                      with_spatial_pool=True): #832):
+        
+        super(RoiPoolLayer, self).__init__()
+        self.roi_op = SingleRoIExtractor3D(roi_layer_type=roi_layer_type,
+                                            featmap_stride=roi_spatial_scale,
+                                            output_size=roi_layer_output,
+                                            with_temporal_pool=roi_with_temporal_pool)
+
+        self.temporal_pool = nn.AdaptiveAvgPool3d((1, None, None))
+        self.spatial_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
+        self.with_spatial_pool = with_spatial_pool
+        
+    
+    def forward(self, x, bbox):
+        #x: b,c,t,w,h
+        batch, c, t, h, w = x.size()
+        # print('before roipool: ', x.size(), ', bbox: ', bbox.size())
+        x, _ = self.roi_op(x, bbox)
+        # print('RoiPoolLayer after roipool: ', x.size())
+        x = self.temporal_pool(x)
+        # print('after temporal_pool: ', x.size())
+
+        if self.with_spatial_pool:
+            x = self.spatial_pool(x) #torch.Size([16, 528, 1, 1, 1]
+            # print('after spatial_pool: ', x.size())
+            x = x.view(x.size(0),-1)
+        return x
+
+
+class TwoStreamVD_Binary_CFam(nn.Module):
+    def __init__(self, cfg):
+        super(TwoStreamVD_Binary_CFam, self).__init__()
+        self.cfg = cfg
+        self.with_roipool = self.cfg.WITH_ROIPOOL #config['with_roipool']
+        self._3d_stream = self.build_3d_backbone()
+        
+        self._2d_stream = Backbone2DResNet(
+            self.cfg._2D_BRANCH.NAME ,#config['2d_backbone'],
+            self.cfg._2D_BRANCH.FINAL_ENDPOINT,#config['base_out_layer'],
+            num_trainable_layers=self.cfg._2D_BRANCH.NUM_TRAINABLE_LAYERS#config['num_trainable_layers']
+            )
+        
+        if self.with_roipool:
+            self.roi_pool_3d = RoiPoolLayer(
+                roi_layer_type=self.cfg._ROI_LAYER.TYPE,#config['roi_layer_type'],
+                roi_layer_output=self.cfg._ROI_LAYER.OUTPUT,#config['roi_layer_output'],
+                roi_with_temporal_pool=self.cfg._ROI_LAYER.WITH_TEMPORAL_POOL,#config['roi_with_temporal_pool'],
+                roi_spatial_scale=self.cfg._ROI_LAYER.SPATIAL_SCALE,#config['roi_spatial_scale'],
+                with_spatial_pool=self.cfg._ROI_LAYER.WITH_SPATIAL_POOL#False
+                )
+            
+            self.roi_pool_2d = RoIAlign(output_size=self.cfg._ROI_LAYER.OUTPUT,#config['roi_layer_output'],
+                                        spatial_scale=self.cfg._ROI_LAYER.SPATIAL_SCALE,#config['roi_spatial_scale'],
+                                        sampling_ratio=0,
+                                        aligned=True
+                                        )
+        else:
+            # self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
+            self.temporal_pool = nn.AdaptiveAvgPool3d((1, None, None))
+        in_channels = self.cfg._CFAM_BLOCK.IN_CHANNELS #config['CFAMBlock_in_channels']
+        out_channels = self.cfg._CFAM_BLOCK.OUT_CHANNELS #config['CFAMBlock_out_channels']                       
+        self.CFAMBlock = CFAMBlock(in_channels, out_channels)
+        self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
+        # if self.config['head'] == 'binary':
+        if self.cfg._HEAD == 'binary':
+            self.classifier = nn.Conv2d(out_channels, 2, kernel_size=1, bias=False)
+        # elif self.config['head'] == 'regression':
+        elif self.cfg._HEAD == 'regression':
+            self.classifier = nn.Conv2d(out_channels, 1, kernel_size=1, bias=False)
+    
+    def weight_init(self):
+        for layer in self.classifier:
+            if type(layer) == nn.Linear:
+                nn.init.xavier_normal_(layer.weight)
+    
+    def build_3d_backbone(self):
+        # if self.config['backbone_name'] == 'i3d':
+        if self.cfg._3D_BRANCH.NAME == 'i3d':
+            backbone = BackboneI3D(
+                self.cfg._3D_BRANCH.FINAL_ENDPOINT,#self.config['final_endpoint'], 
+                self.cfg._3D_BRANCH.PRETRAINED_MODEL,#self.config['pretrained_backbone_model'],
+                freeze=self.cfg._3D_BRANCH.FREEZE_3D#self.config['freeze_3d']
+                )
+        elif self.cfg._3D_BRANCH.NAME == '3dresnet':
+            backbone = Backbone3DResNet()
+        return backbone
+
+        
+    def forward(self, x1, x2, bbox=None, num_tubes=0):
+        batch, c, t, h, w = x1.size()
+        x_3d = self._3d_stream(x1) #torch.Size([2, 528, 4, 14, 14])
+        x_2d = self._2d_stream(x2) #torch.Size([2, 1024, 14, 14])
+
+        # print('output_3dbackbone: ', x_3d.size())
+        # print('output_2dbackbone: ', x_2d.size())
+        if self.with_roipool:
+            batch = int(batch/num_tubes)
+            x_3d = self.roi_pool_3d(x_3d,bbox)#torch.Size([8, 528])
+            x_3d = torch.squeeze(x_3d, dim=2)
+            # x_3d = torch.squeeze(x_3d)
+            # print('3d after roipool: ', x_3d.size())
+            x_2d = self.roi_pool_2d(x_2d, bbox)
+            # print('2d after roipool: ', x_2d.size())
+        else:
+            x_3d = self.temporal_pool(x_3d)
+            x_3d = torch.squeeze(x_3d)
+            # print('3d after tmppool: ', x_3d.size())
+
+        x = torch.cat((x_3d,x_2d), dim=1) #torch.Size([8, 1552, 8, 8])
+        x = self.CFAMBlock(x) #torch.Size([8, 145, 8, 8])
+        # print('after CFAMBlock: ', x.size())
+
+        if self.with_roipool:
+
+            #++++op 1
+             # x = x.view(batch, 4, 145, 8, 8)
+            # x = self.avg_pool_2d(x)
+            # print('after avgpool 2d: ', x.size())
+            
+            #++++op 2
+            # x = x.view(batch, num_tubes, -1)
+            # print('after view: ', x.size())
+            # x = x.max(dim=1).values #torch.Size([2, 9280])
+            # print('after tmp max pool: ', x.size())
+            # x=self.classifier(x)
+            # print('after las fc: ', x.size())
+
+            #++++op 3
+            b_1, c_1, w_1, h_1 = x.size()
+            if self.cfg._HEAD == 'binary':
+                x = x.view(batch, num_tubes, c_1, w_1, h_1)
+                x = x.max(dim=1).values
+                # print('after tmp max pool: ', x.size())
+                x = self.classifier(x)
+                # print('after classifier conv: ', x.size())
+                x = self.avg_pool_2d(x)
+                # print('after avg2D: ', x.size())
+                x = torch.squeeze(x)
+            elif self.cfg._HEAD == 'regression':
+                x = self.classifier(x)
+                # print('after classifier conv: ', x.size())
+                x = self.avg_pool_2d(x)
+                # print('after avg2D: ', x.size())
+                x = torch.squeeze(x)
+                x = torch.sigmoid(x)
+                # print('after sigmoid: ', x.size(), x)
+                x = x.view(batch, num_tubes, -1)
+                x = x.max(dim=1).values
+                x = torch.squeeze(x)
+                # print('after max: ', x.size(), x)
+
+
+        else:
+            # x = self.avg_pool_2d(x)
+            # x = torch.squeeze(x)
+            # x = x.view(batch, -1)
+            # print('view: ', x.size())
+            # x = self.classifier(x)
+
+            x = self.classifier(x)
+            # print('after classifier: ', x.size())
+            x = self.avg_pool_2d(x)
+            # print('after avg_pool_2d: ', x.size())
+            x = torch.squeeze(x)
+            # print('after squeeze: ', x.size())
+          
+
+        return x
+        
+
+if __name__=='__main__':
+
+    
+
+    
+    
+    print('------- ViolenceDetector --------')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = TwoStreamVD_Binary_CFam(config=None).to(device)
+    # # model = ViolenceDetectorRegression(aggregate=True).to(device)
+    batch = 2
+    tubes = 4
+    input_1 = torch.rand(batch*tubes,3,8,224,224).to(device)
+    input_2 = torch.rand(batch*tubes,3,224,224).to(device)
+
+    rois = torch.rand(batch*tubes, 5).to(device)
+    rois[0] = torch.tensor([0,  62.5481,  49.0223, 122.0747, 203.4146]).to(device)#torch.tensor([1, 14, 16, 66, 70]).to(device)
+    rois[1] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    rois[2] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    rois[3] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    rois[4] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    rois[5] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    rois[6] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    rois[7] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+
+    output = model(input_1, input_2, rois, tubes)
+    # output = model(input_1, input_2, None, None)
+    # output = model(input_1, rois, tubes)
+    print('output: ', output, output.size())
+    
+    # regressor = ViolenceDetectorRegression().to(device)
+    # input_1 = torch.rand(batch*tubes,3,16,224,224).to(device)
+    # output = regressor(input_1, rois, tubes)
+    # print('output: ', output.size())
+
+    # model = ResNet2D_Stream(config=TWO_STREAM_CFAM_CONFIG).to(device)
+    # batch = 2
+    # tubes = 3
+    # input_2 = torch.rand(batch*tubes,3,224,224).to(device)
+    # rois = torch.rand(batch*tubes, 5).to(device)
+    # rois[0] = torch.tensor([0, 34, 14, 85, 77]).to(device)
+    # rois[1] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    # rois[0] = torch.tensor([2, 34, 14, 85, 77]).to(device)
+    # rois[1] = torch.tensor([3, 34, 14, 85, 77]).to(device)
+    # rois[0] = torch.tensor([4, 34, 14, 85, 77]).to(device)
+    # rois[1] = torch.tensor([5, 34, 14, 85, 77]).to(device)
+
+    # output = model(input_2, rois, tubes)
+    # print('output: ', output.size())
