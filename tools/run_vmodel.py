@@ -16,36 +16,11 @@ import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
-def test_model(cfg):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = TwoStreamVD_Binary_CFam(cfg)
-    print('------- ViolenceDetector --------')
-    
-    # # model = ViolenceDetectorRegression(aggregate=True).to(device)
-    batch = 2
-    tubes = 4
-    input_1 = torch.rand(batch*tubes,3,8,224,224).to(device)
-    input_2 = torch.rand(batch*tubes,3,224,224).to(device)
-
-    rois = torch.rand(batch*tubes, 5).to(device)
-    rois[0] = torch.tensor([0,  62.5481,  49.0223, 122.0747, 203.4146]).to(device)#torch.tensor([1, 14, 16, 66, 70]).to(device)
-    rois[1] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[2] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[3] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[4] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[5] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[6] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[7] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-
-    output = model(input_1, input_2, rois, tubes)
-    # output = model(input_1, input_2, None, None)
-    # output = model(input_1, rois, tubes)
-    print('output: ', output, output.size())
 
 def main():
     # Setup cfg.
     cfg = get_cfg_defaults()
-    cfg.merge_from_file("/Users/davidchoqueluqueroman/Documents/CODIGOS_SOURCES/WSVDL2021/configs/TWOSTREAM_16RGB_DYNIMG.yaml")
+    cfg.merge_from_file("../configs/TWOSTREAM_16RGB_DYNIMG.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = HOME_OSX
     print(cfg)
 
