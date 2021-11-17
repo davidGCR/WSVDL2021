@@ -67,12 +67,14 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
         
     train_loss = losses.avg
     train_acc = accuracies.avg
+    time_ = batch_time.avg
     print(
         'Epoch: [{}]\t'
         'Loss(train): {loss:.4f}\t'
-        'Acc(train): {acc:.3f}'.format(_epoch, loss=train_loss, acc=train_acc)
+        'Acc(train): {acc:.3f}\t'
+        'Time: {tim:.3f:}'.format(_epoch, loss=train_loss, acc=train_acc, tim=time_)
     )
-    return train_loss, train_acc
+    return train_loss, train_acc, time_
 
 def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     print('validation at epoch: {}'.format(_epoch))

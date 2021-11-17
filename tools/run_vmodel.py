@@ -89,7 +89,7 @@ def main(h_path):
     
     for epoch in range(start_epoch, cfg.SOLVER.EPOCHS):
         # epoch = last_epoch+i
-        train_loss, train_acc = train(
+        train_loss, train_acc, train_time = train(
             train_loader, 
             epoch, 
             model, 
