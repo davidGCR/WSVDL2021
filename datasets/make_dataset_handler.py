@@ -1,6 +1,7 @@
 from utils.global_var import *
 from datasets.make_dataset import MakeRWF2000, MakeHockeyDataset, MakeRLVDDataset
 from datasets.make_UCFCrime import MakeUCFCrime
+from datasets.make_UCFCrime2Local import MakeUCFCrime2LocalClips
 
 def load_make_dataset(cfg,
                       env_datasets_root,
@@ -72,3 +73,17 @@ def load_make_dataset(cfg,
         exit()
 
     return make_dataset
+
+def load_make_dataset_UCFCrime2Local(data_root):
+    """Load MakeUCFCrime2LocalClips make function
+
+    Args:
+        data_root (pathlib.Path): Root path to folder with datasets
+    """
+    val_make_dataset = MakeUCFCrime2LocalClips(
+                root=data_root/'UCFCrime2Local/UCFCrime2LocalClips',
+                # root_normal='/Volumes/TOSHIBA EXT/DATASET/AnomalyCRIMEALL/UCFCrime2Local/frames',
+                path_annotations=data_root/'UCFCrime2Local/Txt annotations-longVideos',
+                path_person_detections=data_root/'PersonDetections/ucfcrime2local',
+                abnormal=True)
+    return val_make_dataset

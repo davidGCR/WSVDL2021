@@ -31,7 +31,7 @@ class TubeDataset(data.Dataset):
         Args:
             cfg (Yaml): cfg.TUBE_DATASET
             make_fn ([type]): [description]
-            inputs_config ([type]): [description]
+            inputs_config ([CnnInputConfig]): [description]
             dataset ([type]): [description]
 
         Returns:
@@ -62,12 +62,12 @@ class TubeDataset(data.Dataset):
         self.sampler = TubeCrop(tube_len=cfg.NUM_FRAMES,
                                 central_frame=True,
                                 max_num_tubes=cfg.NUM_TUBES,
-                                input_type=self.config['input_1']['type'],
+                                input_type=self.config['input_1'].itype,
                                 sample_strategy=cfg.FRAMES_STRATEGY,
                                 random=cfg.RANDOM,
                                 box_as_tensor=False)
 
-        if self.config['input_2']['type'] == DYN_IMAGE:
+        if self.config['input_2'].itype == DYN_IMAGE:
             self.dynamic_image_fn = DynamicImage()
     
     def get_sampler(self):
@@ -113,7 +113,7 @@ class TubeDataset(data.Dataset):
         raw_clip_images = []
         tube_images_t = None
         tube_boxes = []
-        if self.config['input_1']['type']=='rgb':
+        if self.config['input_1'].itype=='rgb':
             frames_paths = [self.build_frame_name(path, i, frames_names_list) for i in frames_indices]
             # for j, fp in enumerate(frames_paths):
             #     print(j, ' ', fp)
@@ -136,20 +136,12 @@ class TubeDataset(data.Dataset):
             # print('\tube_boxes: ', tube_boxes, len(tube_boxes))
             # print('\t tube_images: ', type(tube_images), type(tube_images[0]))
             raw_clip_images = tube_images.copy()
-            if self.config['input_1']['spatial_transform']:
-                tube_images_t, tube_boxes_t, t_combination = self.config['input_1']['spatial_transform'](tube_images, tube_boxes)
+            if self.config['input_1'].spatial_transform:
+                tube_images_t, tube_boxes_t, t_combination = self.config['input_1'].spatial_transform(tube_images, tube_boxes)
        
         return tube_images_t, tube_boxes_t, tube_boxes, raw_clip_images, t_combination
     
     def load_input_2_di(self, frames_indices, path, frames_names_list):
-        # if self.config['input_2']['type'] == 'rgb':
-        #     i = frames_indices[int(len(frames_indices)/2)]
-            
-        #     img_path = self.build_frame_name(path, i, frames_names_list)
-        #     print('central frame path: ', i, ' ', img_path)
-        #     key_frame = imread(img_path)
-            
-        # elif self.config['input_2']['type'] == 'dynamic-image':
         frames_paths = [self.build_frame_name(path, i, frames_names_list) for i in frames_indices] #rwf
         print('frames to build DI')
         for j, fp in enumerate(frames_paths):
@@ -158,8 +150,8 @@ class TubeDataset(data.Dataset):
         key_frame = self.dynamic_image_fn(shot_images)
             
         raw_key_frame = key_frame.copy()
-        if self.config['input_2']['spatial_transform']:
-            key_frame = self.config['input_2']['spatial_transform'](key_frame)
+        if self.config['input_2'].spatial_transform:
+            key_frame = self.config['input_2'].spatial_transform(key_frame)
         return key_frame, raw_key_frame
 
     def load_tube_images(self, path, seg):
@@ -282,15 +274,15 @@ class TubeDataset(data.Dataset):
                 if self.cfg.KEYFRAME_STRATEGY == DYNAMIC_IMAGE_KEYFRAME:
                     # key_frame, _ = self.load_input_2_di(sampled_frames_indices[k], path, frames_names_list)
                     key_frame = self.dynamic_image_fn(video_images[k])
-                    if self.config['input_2']['spatial_transform']:
-                        key_frame = self.config['input_2']['spatial_transform'](key_frame)
+                    if self.config['input_2'].spatial_transform:
+                        key_frame = self.config['input_2'].spatial_transform(key_frame)
                 else:
                     if self.cfg.KEYFRAME_STRATEGY == RGB_MIDDLE_KEYFRAME:
                         m = int(video_images[k].size(0)/2) #using frames loaded from 3d branch
                         key_frame = video_images[k][m] #tensor 
                         key_frame = key_frame.numpy()
-                        if self.config['input_2']['spatial_transform']:
-                            key_frame = self.config['input_2']['spatial_transform'](key_frame)
+                        if self.config['input_2'].spatial_transform:
+                            key_frame = self.config['input_2'].spatial_transform(key_frame)
                     else:
                         #TODO
                         print('Not implemented yet...')

@@ -1,5 +1,5 @@
 def log_name(cfg):
-    str_ = "{}_{}_CV({})_usingGT({})_numTubes({})_framesXtube({})_framesStrat({})_boxStrat({})_keyframe({})_loss({})_opt({})_lr({})_epochs({})".format(
+    str_ = "{}_{}_CV({})_usingGT({})_numTubes({})_framesXtube({})_framesStrat({})_boxStrat({})_keyframeInput({})_loss({})_opt({})_lr({})_epochs({})".format(
         cfg.MODEL.NAME,
         cfg.DATA.DATASET,
         cfg.DATA.CV_SPLIT,
