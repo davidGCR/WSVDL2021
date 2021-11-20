@@ -28,6 +28,10 @@ def main(h_path):
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     print(cfg)
 
+    # test_dataset(cfg)
+    # exit()
+
+
     device = get_torch_device()
     if cfg.MODEL._HEAD == BINARY:
         make_dataset_train = load_make_dataset(cfg.DATA,
@@ -157,6 +161,6 @@ def main(h_path):
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_OSX
+    h_path = HOME_UBUNTU
     torch.autograd.set_detect_anomaly(True)
     main(h_path)

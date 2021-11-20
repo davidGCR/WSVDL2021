@@ -72,7 +72,7 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
         'Epoch: [{}]\t'
         'Loss(train): {loss:.4f}\t'
         'Acc(train): {acc:.3f}\t'
-        'Time: {tim:.3f:}'.format(_epoch, loss=train_loss, acc=train_acc, tim=time_)
+        'Time: {tim:.3f}'.format(_epoch, loss=train_loss, acc=train_acc, tim=time_)
     )
     return train_loss, train_acc, time_
 

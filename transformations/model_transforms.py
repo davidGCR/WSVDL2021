@@ -1,3 +1,4 @@
+from random import sample
 from re import T
 from transformations.spatial_transforms import Compose, Normalize, GroupRandomScaleCenterCrop, GroupRandomHorizontalFlip, ToTensor
 from transformations.temporal_transforms import *
@@ -23,17 +24,20 @@ def cnn3d_transf():
     T = {
         'train':Compose(
                 [
+                    ClipResize(224),
                     ClipRandomHorizontalFlip(), 
                     # ClipRandomScale(scale=0.2, diff=True), 
                     ClipRandomRotate(angle=5),
                     # ClipRandomTranslate(translate=0.1, diff=True),
                     # ClipRandomScale(scale=0.2, diff=True),
+                    
                     NumpyToTensor()
                 ],
-                probs=[0.4, 0.5, 0.2, 0.3]
+                probs=[1, 0.4, 0.5, 0.2, 0.3]
                 ),
         'val': Compose(
                 [
+                    ClipResize(224),
                     NumpyToTensor()
                 ]
                 )
@@ -123,7 +127,7 @@ def resnet_di_transf():
             'train': transforms.Compose([
                 # transforms.RandomResizedCrop(input_size),
                 # transforms.RandomHorizontalFlip(),
-                # transforms.Resize(input_size),
+                transforms.Resize(input_size),
                 # transforms.CenterCrop(input_size),
                 transforms.ToTensor(),
                 norm

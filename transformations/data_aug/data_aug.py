@@ -42,7 +42,7 @@ class Compose(object):
         self.transforms = []
         self.probs = probs
         for t in transforms:
-            if isinstance(t, NumpyToTensor) :
+            if isinstance(t, NumpyToTensor): #or isinstance(t, ClipResize):
                 self.transforms.append(t)
             else:
                 self.group_transforms.append(t)
@@ -65,6 +65,7 @@ class Compose(object):
             imgs_list = []
             boxes_list = []
             for img, boxes in zip(img_group, bboxes):
+                # print('img compose: ', type(img), img.shape)
                 image_t, boxes_t = t(img, boxes)
                 imgs_list.append(image_t)
                 boxes_list.append(boxes_t)
@@ -79,6 +80,43 @@ class NumpyToTensor(object):
         img = torch.from_numpy(img.copy()).float()
         bboxes = torch.from_numpy(bboxes).float()
         return img, bboxes
+
+class ClipResize(object):
+    def __init__(self, inp_dim):
+        self.inp_dim = inp_dim
+
+    def imgTransformation(self, img, bboxes):
+        w,h = img.shape[1], img.shape[0]
+        img = letterbox_image(img, self.inp_dim)
+    
+        scale = min(self.inp_dim/h, self.inp_dim/w)
+        bboxes[:,:4] *= (scale)
+    
+        new_w = scale*w
+        new_h = scale*h
+        inp_dim = self.inp_dim   
+    
+        del_h = (inp_dim - new_h)/2
+        del_w = (inp_dim - new_w)/2
+    
+        add_matrix = np.array([[del_w, del_h, del_w, del_h]]).astype(int)
+    
+        bboxes[:,:4] += add_matrix
+    
+        img = img.astype(np.uint8)
+    
+        return img, bboxes 
+
+    def __call__(self, img_group, bboxes_group):
+        imgs = []
+        bboxes_transformed = []
+        for i, img in enumerate(img_group):
+            # print('img: ', img.shape)
+            # img_t, bboxes_t = self.img_transform(img, bboxes[i])
+            img_t, bboxes_t = self.imgTransformation(img, bboxes_group[i])
+            imgs.append(img_t)
+            bboxes_transformed.append(bboxes_t)
+        return imgs, bboxes_transformed
 
 class ClipRandomHorizontalFlip(object):
     def __init__(self):

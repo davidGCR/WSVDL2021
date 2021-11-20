@@ -41,7 +41,7 @@ def load_make_dataset(cfg,
             root=os.path.join(home_path, 'HockeyFightsDATASET/frames'), 
             train=train,
             cv_split_annotation_path=os.path.join(home_path, 'VioNetDB-splits/hockey_jpg{}.json'.format(cv_split)), #'/content/DATASETS/VioNetDB-splits/hockey_jpg{}.json'
-            path_annotations=os.path.join(home_path, at_path, 'final/hockey'),
+            path_annotations=os.path.join(home_path, at_path, 'HockeyFightsDATASET'),
             )
     elif dataset_name == RLVSD_DATASET:
         make_dataset = MakeRLVDDataset(
