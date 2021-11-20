@@ -75,7 +75,8 @@ def test_dataset(cfg):
     train_dataset = TubeDataset(
                                 cfg.TUBE_DATASET,
                                 make_dataset,
-                                inputs_config
+                                inputs_config,
+                                UCFCrimeReduced_DATASET
                                 )
     
     # for i in range(len(train_dataset)):
@@ -86,7 +87,7 @@ def test_dataset(cfg):
     #         break
     # random.seed(34)
     for i in range(1):
-        bboxes, video_images, label, num_tubes, path, key_frames = train_dataset[400]
+        bboxes, video_images, label, num_tubes, path, key_frames = train_dataset[40]
         print('\tpath: ', path)
         print('\tvideo_images: ', type(video_images), video_images.size())
         print('\tbboxes: ', bboxes.size())

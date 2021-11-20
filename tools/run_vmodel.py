@@ -15,7 +15,7 @@ from lib.accuracy import calculate_accuracy_2
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-
+from debug_dataset import test_dataset
 
 def main(h_path):
     # Setup cfg.
@@ -24,6 +24,10 @@ def main(h_path):
     cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_DYNIMG.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     print(cfg)
+
+    # test_dataset(cfg)
+    # exit()
+
 
     device = get_torch_device()
     make_dataset_train = load_make_dataset(cfg.DATA,
@@ -124,4 +128,5 @@ def main(h_path):
 
 if __name__=='__main__':
     h_path = HOME_UBUNTU
+    torch.autograd.set_detect_anomaly(True)
     main(h_path)

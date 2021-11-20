@@ -51,7 +51,7 @@ class TubeDataset(data.Dataset):
             # self.paths = [self.paths[i] for i in range(len(self.paths)) if i not in indices_2_remove]
             # self.labels = [self.labels[i] for i in range(len(self.labels)) if i not in indices_2_remove]
             # self.annotations = [self.annotations[i] for i in range(len(self.annotations)) if i not in indices_2_remove]
-        elif self.dataset == 'UCFCrime_Reduced':
+        elif self.dataset == UCFCrimeReduced_DATASET:
             self.paths, self.labels, self.annotations, self.num_frames = self.make_function()
         else:
             self.paths, self.labels, self.annotations = self.make_function()

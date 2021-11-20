@@ -57,7 +57,7 @@ _C.MODEL._FC.INPUT_DIM = 0
 
 #Dataset folders and splits
 _C.DATA = CN()
-_C.DATA.ROOT = "/Users/davidchoqueluqueroman/Documents/DATASETS_Local"
+_C.DATA.ROOT = "/media/david/datos/Violence DATA"
 _C.DATA.DATASET = ""
 _C.DATA.CV_SPLIT = -1
 _C.DATA.SPLITS_FOLDER = "VioNetDB-splits"
@@ -76,13 +76,13 @@ _C.DATA.LOAD_GROUND_TRUTH = False
 # _C.RLVSD_DATASET.NAME = "RealLifeViolenceDataset"
 # _C.RLVSD_DATASET.ROOT = "RealLifeViolenceDataset/frames"
 
-# _C.UCFCRIME_DATASET = CN()
-# _C.UCFCRIME_DATASET.NAME = "UCFCrime_Reduced"
-# _C.UCFCRIME_DATASET.ROOT = "UCFCrime_Reduced/frames"
-# _C.UCFCRIME_DATASET.TRAIN_ANNOT_ABNORMAL = "Train_annotation.pkl"
-# _C.UCFCRIME_DATASET.TRAIN_ANNOT_NORMAL = "Train_normal_annotation.pkl"
-# _C.UCFCRIME_DATASET.TEST_ANNOT_ABNORMAL = "Test_annotation.pkl"
-# _C.UCFCRIME_DATASET.TEST_ANNOT_NORMAL = "Test_normal_annotation.pkl"
+_C.UCFCRIME_DATASET = CN()
+_C.UCFCRIME_DATASET.NAME = "UCFCrime_Reduced"
+_C.UCFCRIME_DATASET.ROOT = "UCFCrime_Reduced/frames"
+_C.UCFCRIME_DATASET.TRAIN_ANNOT_ABNORMAL = "Train_annotation.pkl"
+_C.UCFCRIME_DATASET.TRAIN_ANNOT_NORMAL = "Train_normal_annotation.pkl"
+_C.UCFCRIME_DATASET.TEST_ANNOT_ABNORMAL = "Test_annotation.pkl"
+_C.UCFCRIME_DATASET.TEST_ANNOT_NORMAL = "Test_normal_annotation.pkl"
 
 #Tube dataset config
 _C.TUBE_DATASET = CN()
