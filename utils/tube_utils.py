@@ -1,6 +1,8 @@
 import numpy as np
 import json
 from json import JSONEncoder
+import cv2
+import os
 
 class NumpyArrayEncoder(JSONEncoder):
     def default(self, obj):
@@ -83,3 +85,88 @@ def JSON_2_videoDetections(json_file):
             f['pred_boxes'] = np.asarray(f['pred_boxes'])
         # print(decodedArray[0])
         return decodedArray
+
+
+def bbox_iou_numpy(box1, box2):
+    """Computes IoU between bounding boxes.
+    Parameters
+    ----------
+    box1 : ndarray
+        (N, 4) shaped array with bboxes
+    box2 : ndarray
+        (M, 4) shaped array with bboxes
+    Returns
+    -------
+    : ndarray
+        (N, M) shaped array with IoUs
+    """
+    # print('box1: ', box1.shape, '--box2: ', box2.shape)
+    area = (box2[:, 2] - box2[:, 0]) * (box2[:, 3] - box2[:, 1])
+
+    iw = np.minimum(np.expand_dims(box1[:, 2], axis=1), box2[:, 2]) - np.maximum(
+        np.expand_dims(box1[:, 0], 1), box2[:, 0]
+    )
+    ih = np.minimum(np.expand_dims(box1[:, 3], axis=1), box2[:, 3]) - np.maximum(
+        np.expand_dims(box1[:, 1], 1), box2[:, 1]
+    )
+
+    iw = np.maximum(iw, 0)
+    ih = np.maximum(ih, 0)
+
+    ua = np.expand_dims((box1[:, 2] - box1[:, 0]) * (box1[:, 3] - box1[:, 1]), axis=1) + area - iw * ih
+
+    ua = np.maximum(ua, np.finfo(float).eps)
+
+    intersection = iw * ih
+
+    return intersection / ua
+
+def merge_bboxes(bbox1, bbox2, flac):
+    """
+    return:
+        array of shape (1,5)
+    """
+
+    x1 = min(bbox1[0], bbox2[0])
+    y1 = min(bbox1[1], bbox2[1])
+    x2 = max(bbox1[2], bbox2[2])
+    y2 = max(bbox1[3], bbox2[3])
+    # s = max(bbox1[4], bbox2[4])
+    # s = bbox1[4] + bbox2[4]
+    s = flac
+    # print('joined score: ', bbox1[4], bbox2[4], s)
+    return np.array([x1, y1, x2, y2, s]).reshape(1,-1)
+
+def merge_bboxes_numpy(bboxes, flac):
+    """
+    input:  
+        (N,5) array
+    return:
+        array of shape (1,5)
+    """
+    # print('bboxes',bboxes, bboxes.shape)
+    # print('jmin: ', np.amin(bboxes, axis=0))
+    # print('jmax: ', np.amax(bboxes, axis=0))
+
+    x1 = np.amin(bboxes, axis=0)[0]
+    y1 = np.amin(bboxes, axis=0)[1]
+    x2 = np.amax(bboxes, axis=0)[2]
+    y2 = np.amax(bboxes, axis=0)[3]
+    # s = max(bbox1[4], bbox2[4])
+    s = flac
+    # print('joined score: ', bbox1[4], bbox2[4], s)
+    return np.array([x1, y1, x2, y2, s]).reshape(1,-1)
+
+def create_video(images, image_folder, video_name, save_frames=False):
+    height, width, layers = images[0].shape
+    video_name = os.path.join(image_folder, video_name)
+    video = cv2.VideoWriter(video_name, 0, 1, (width, height))
+    # Appending the images to the video one by one
+    for i, image in enumerate(images): 
+        if save_frames:
+            cv2.imwrite(image_folder + '/'+str(i+1)+'.jpg', image)
+        video.write(image) 
+      
+    # Deallocating memories taken for window creation
+    cv2.destroyAllWindows() 
+    video.release()  # releasing the video generated

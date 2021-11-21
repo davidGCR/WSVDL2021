@@ -112,7 +112,7 @@ def data_with_tubes_localization(cfg, make_dataset_train):
         make_dataset_val (function): make function of val/test set
 
     Returns:
-        tuple: (train_loader, CnnInputConfig)
+        tuple: (train_loader, dict{input_1: CnnInputConfig, input_2: CnnInputConfig})
     """
 
     TWO_STREAM_INPUT_train = {
@@ -121,7 +121,7 @@ def data_with_tubes_localization(cfg, make_dataset_train):
     }
 
     TWO_STREAM_INPUT_val = {
-        'input_1': CnnInputConfig(RGB_FRAME, i3d_video_transf()['val'], None), 
+        'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None), 
         'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val')
     }
     

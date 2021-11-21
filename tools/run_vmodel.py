@@ -146,11 +146,14 @@ def main(h_path):
             #     None,
             #     False)
             
-            ap05, ap02 = val_regressor(make_dataset_val, 
+            ap05, ap02 = val_regressor(cfg.TUBE_DATASET,
+                                       make_dataset_val, 
                                        TWO_STREAM_INPUT_val, 
                                        model, 
                                        device, 
-                                       epoch)
+                                       epoch,
+                                       Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips")
+            exit()
             # scheduler.step(train_loss)
             # writer.add_scalar('training loss', train_loss, epoch)
             writer.add_scalar('AP-0.5', ap05, epoch)
@@ -161,6 +164,6 @@ def main(h_path):
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_UBUNTU
+    h_path = HOME_OSX
     torch.autograd.set_detect_anomaly(True)
     main(h_path)
