@@ -1,13 +1,15 @@
 from datasets.ucfcrime2local_dataset import UCFCrime2LocalVideoDataset
 from datasets.tube_crop import TubeCrop
 from configs.tube_config import TUBE_BUILD_CONFIG, MOTION_SEGMENTATION_CONFIG
-from utils.tube_utils import JSON_2_videoDetections
+from utils.tube_utils import JSON_2_videoDetections, save_video_tubes, JSON_2_tube
 from utils.utils import get_number_from_string, AverageMeter, natural_sort
 from tubes.run_tube_gen import extract_tubes_from_video
 from lib.spatio_temp_iou import st_iou
 
 import torch
 import numpy as np
+from sklearn import metrics
+import os
 
 def train_regressor(
     _loader, 
@@ -16,7 +18,7 @@ def train_regressor(
     _criterion, 
     _optimizer, 
     _device, 
-    _config, 
+    _num_tubes, 
     _accuracy_fn=None, 
     _verbose=False):
     print('training at epoch: {}'.format(_epoch))
@@ -44,7 +46,7 @@ def train_regressor(
         # zero the parameter gradients
         _optimizer.zero_grad()
         #predict
-        outs = _model(video_images, key_frames, boxes, _config.num_tubes)
+        outs = _model(video_images, key_frames, boxes, _num_tubes)
         #loss
         # print('labels: ', labels, labels.size(),  outs, outs.size())
         loss = _criterion(outs, labels)
@@ -106,7 +108,7 @@ def get_tube_scores(_model, _video_images, _key_frames, _boxes, _device):
             except Exception as e:
                 print("\nOops!", e.__class__, "occurred.")
                 print("tube_images: ", tube_images.size())
-                print("tube_key_frame: ", tube_keyframe.size())
+                print("tube_key_frame: ", tube_keyframe .size())
                 print("tube_bbox: ", tube_bbox, tube_bbox.size())
                 exit()
         tube_scores.append(outs.item())
@@ -117,7 +119,40 @@ def max_tube_idx(tube_scores):
     max_idx = np.argmax(tube_scores)
     return max_idx
 
-def val_regressor(cfg, val_make_dataset, transformations, _model, _device, _epoch, _data_root):
+def precision_recall_curve(y_true, pred_scores, thresholds):
+    precisions = []
+    recalls = []
+    
+    for threshold in thresholds:
+        y_pred = ["positive" if score >= threshold else "negative" for score in pred_scores]
+
+        precision = metrics.precision_score(y_true=y_true, y_pred=y_pred, pos_label="positive")
+        recall = metrics.recall_score(y_true=y_true, y_pred=y_pred, pos_label="positive")
+        
+        precisions.append(precision)
+        recalls.append(recall)
+
+    return precisions, recalls
+
+def mAP(y_true, pred, thresholds=[0.5, 0.2]):
+    aps=[]
+    for k in range(len(thresholds)):
+        thr = np.array([thresholds[k]])
+        precisions, recalls = precision_recall_curve(y_true=y_true, 
+                                                    pred_scores=pred,
+                                                    thresholds=thr)
+        recall_11 = np.linspace(0, 1, 11)
+        precisions_11 = []
+        for r in recall_11:
+            if r <= recalls[0]:
+                precisions_11.append(precisions[0])
+            else:
+                precisions_11.append(0)
+        AP = (1/11)*np.sum(precisions_11)
+        aps.append(AP)
+    return aps[0], aps[1]
+
+def val_regressor(cfg, val_make_dataset, transformations, _model, _device, _epoch, _data_root, _tube_ann_path):
     """[summary]
 
     Args:
@@ -128,16 +163,17 @@ def val_regressor(cfg, val_make_dataset, transformations, _model, _device, _epoc
         _device (torch.device): Pytorch device
         _epoch (int): Epoch
         _data_root (str): Path to datasets folder
+        _tube_ann_path (Path): Path to Tubes folder
     """
     print('validation at epoch: {}'.format(_epoch))
     _model.eval()
     paths, labels, annotations, annotations_p_detections, num_frames = val_make_dataset()
     y_true = []
-    pred_scores = []
+    y_pred = []
     TUBE_BUILD_CONFIG['dataset_root'] = _data_root#'/media/david/datos/Violence DATA/UCFCrime2LocalClips/UCFCrime2LocalClips'
 
     for i, (path, label, annotation, annotation_p_detections, n_frames) in enumerate(zip(paths, labels, annotations, annotations_p_detections, num_frames)):
-        print('\nprocession video: ', i+1)
+        # print('\nprocession video: ', i+1, path)
         video_dataset = UCFCrime2LocalVideoDataset(cfg,
                                                     path=path,
                                                     sp_annotation=annotation,
@@ -145,23 +181,40 @@ def val_regressor(cfg, val_make_dataset, transformations, _model, _device, _epoc
                                                     clip_temporal_stride=1,
                                                     transformations=transformations
                                                 )
-        # frames_names = os.listdir(path)
-        # frames_names = natural_sort(frames_names)
-        # frames_indices = list(range(0,len(frames_names)))
+        
         person_detections = JSON_2_videoDetections(annotation_p_detections) #load person detections
         TUBE_BUILD_CONFIG['person_detections'] = person_detections
-        for clip, frames_name, gt, num_frames in video_dataset:
+        for clip, frames_name, gt, num_frames in video_dataset: #this will iterate just once
             frames_indices = list(range(0,len(frames_name)))
-            live_paths, time = extract_tubes_from_video(frames_indices, frames_name, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG)
-            print('num tubes: ', len(live_paths))
+            # 
+            # save_video_tubes('/Users/davidchoqueluqueroman/Documents/DATASETS_Local/ActionTubesV2/UCFCrime2LocalClips', path, live_paths)
+            path_parts = path.split('/')
+            video_ann_path = _tube_ann_path/str(path_parts[-2]+'/'+path_parts[-1]+'.json')
+            
+            if os.path.isfile(video_ann_path):
+                live_paths = JSON_2_tube(video_ann_path)
+            else:
+                print("File not found: {}, extracting tubes...".format(video_ann_path))
+                live_paths, time = extract_tubes_from_video(frames_indices, frames_name, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG)
+            # print('num tubes: ', len(live_paths))
             boxes, video_images, labels, num_tubes, paths, key_frames = video_dataset.get_tube_data(tubes_=live_paths)
-            print('video_images: ', video_images.size())
-            print('key_frames: ', key_frames.size())
-            print('boxes: ', boxes,  boxes.size())
-            print('labels: ', labels)
+            # print('video_images: ', video_images.size())
+            # print('key_frames: ', key_frames.size())
+            # print('boxes: ', boxes,  boxes.size())
+            # print('labels: ', labels)
             tube_scores = get_tube_scores(_model, video_images, key_frames, boxes, _device)
-            print('tube_scores: ', tube_scores)
+            # print('tube_scores: ', tube_scores)
             max_idx = max_tube_idx(tube_scores)
-            print('max_idx: ', max_idx)
+            # print('max_idx: ', max_idx)
             iou = st_iou(live_paths[max_idx], gt)
-            print('iou: ', iou)
+            # print('iou: ', iou)
+            y_true.append('positive')
+            y_pred.append(iou)
+
+    ap_05, ap_02 = mAP(y_true, y_pred)
+    print(
+        'Epoch: [{}]\t'
+        'AP@0.5(val): {:.4f}\t'
+        'AP@0.2(val): {:.4f}'.format(_epoch, ap_05, ap_02)
+    )
+    return ap_05, ap_02

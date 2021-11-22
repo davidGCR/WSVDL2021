@@ -170,3 +170,23 @@ def create_video(images, image_folder, video_name, save_frames=False):
     # Deallocating memories taken for window creation
     cv2.destroyAllWindows() 
     video.release()  # releasing the video generated
+
+def save_video_tubes(folder_out, video_path, tubes):
+    """[summary]
+
+    Args:
+        folder_out (str): Path to Tubes folder.
+        video_path (str): Path of the video folder.
+        tubes (list): List of Tubes (dict)
+    """
+    parts = video_path.split('/')
+    out_file = os.path.join(folder_out, parts[-2], parts[-1]+'.json')
+
+    if not os.path.isdir(os.path.join(folder_out, parts[-2])): #Create folder of split
+        os.makedirs(os.path.join(folder_out, parts[-2]))
+    
+    if os.path.exists(out_file):
+        print('Already done!!!')
+        return
+    
+    tube_2_JSON(output_path=out_file, tube=tubes)

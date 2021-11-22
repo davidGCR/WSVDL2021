@@ -425,7 +425,7 @@ class IncrementalLinking:
             create_video(images_to_video, self.config['plot_config']['save_folder_debug'] , 'tube_gen.avi', save_frames=True)
         
         if len(live_paths)==0 and self.train_mode:
-            print('No tubes in video....using motion map')
+            # print('No tubes in video....using motion map')
             live_path_from_motion = ({
                     'frames_name': [],
                     'boxes':[],
