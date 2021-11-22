@@ -2,14 +2,6 @@ import random
 import PIL
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-import sys
-import os
-
-# lib_path = os.path.join(os.path.realpath(""), "data_aug")
-# sys.path.append(lib_path)
-
-# print('lib_path: ', lib_path)
 
 from transformations.data_aug.bbox_util import *
 # from bbox_util import *

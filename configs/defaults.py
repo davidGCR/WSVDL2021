@@ -54,7 +54,7 @@ _C.MODEL._FC = CN()
 _C.MODEL._FC.INPUT_DIM = 0
 
 
-
+# from pathlib import Path
 #Dataset folders and splits
 _C.DATA = CN()
 _C.DATA.ROOT = "/media/david/datos/Violence DATA"
