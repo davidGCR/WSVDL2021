@@ -135,16 +135,16 @@ def main(h_path):
             writer.add_scalar('validation loss', val_loss, epoch)
             writer.add_scalar('validation accuracy', val_acc, epoch)
         elif cfg.MODEL._HEAD == REGRESSION:
-            # train_loss, train_acc = train_regressor(
-            #     dataloader, 
-            #     epoch, 
-            #     model, 
-            #     criterion, 
-            #     optimizer, 
-            #     config.device, 
-            #     config, 
-            #     None,
-            #     False)
+            train_loss, train_acc = train_regressor(
+                train_loader, 
+                epoch, 
+                model, 
+                criterion, 
+                optimizer, 
+                device, 
+                cfg.TUBE_DATASET.NUM_TUBES, 
+                None,
+                False)
             
             ap05, ap02 = val_regressor(cfg.TUBE_DATASET,
                                        make_dataset_val, 
@@ -152,8 +152,9 @@ def main(h_path):
                                        model, 
                                        device, 
                                        epoch,
-                                       Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips")
-            exit()
+                                       Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips",
+                                       Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"ActionTubesV2/UCFCrime2LocalClips")
+            
             # scheduler.step(train_loss)
             # writer.add_scalar('training loss', train_loss, epoch)
             writer.add_scalar('AP-0.5', ap05, epoch)
