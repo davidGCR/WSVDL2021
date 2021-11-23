@@ -1,12 +1,12 @@
-import torch
-from torch import nn
+
 from models._3d_backbones import Backbone3DResNet, BackboneI3D
 from models._2d_backbones import Backbone2DResNet
 from models.roi_extractor_3d import SingleRoIExtractor3D
 from models.cfam import CFAMBlock 
-from torch.nn import functional as F
-# from models.v_d_config import *
 
+import torch
+from torch import nn
+from torch.nn import functional as F
 from torchvision.ops.roi_align import RoIAlign
 
 class RoiPoolLayer(nn.Module):
@@ -47,7 +47,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
     def __init__(self, cfg):
         super(TwoStreamVD_Binary_CFam, self).__init__()
         self.cfg = cfg
-        self.with_roipool = self.cfg.WITH_ROIPOOL #config['with_roipool']
+        # self.with_roipool = self.cfg.WITH_ROIPOOL #config['with_roipool']
         self._3d_stream = self.build_3d_backbone()
         
         self._2d_stream = Backbone2DResNet(
@@ -56,7 +56,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
             num_trainable_layers=self.cfg._2D_BRANCH.NUM_TRAINABLE_LAYERS#config['num_trainable_layers']
             )
         
-        if self.with_roipool:
+        if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             self.roi_pool_3d = RoiPoolLayer(
                 roi_layer_type=self.cfg._ROI_LAYER.TYPE,#config['roi_layer_type'],
                 roi_layer_output=self.cfg._ROI_LAYER.OUTPUT,#config['roi_layer_output'],
@@ -64,23 +64,23 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 roi_spatial_scale=self.cfg._ROI_LAYER.SPATIAL_SCALE,#config['roi_spatial_scale'],
                 with_spatial_pool=self.cfg._ROI_LAYER.WITH_SPATIAL_POOL#False
                 )
-            
+        else:
+            # self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
+            self.temporal_pool = nn.AdaptiveAvgPool3d((1, None, None))
+        
+        if self.cfg._2D_BRANCH.WITH_ROIPOOL:
             self.roi_pool_2d = RoIAlign(output_size=self.cfg._ROI_LAYER.OUTPUT,#config['roi_layer_output'],
                                         spatial_scale=self.cfg._ROI_LAYER.SPATIAL_SCALE,#config['roi_spatial_scale'],
                                         sampling_ratio=0,
                                         aligned=True
                                         )
-        else:
-            # self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
-            self.temporal_pool = nn.AdaptiveAvgPool3d((1, None, None))
+
         in_channels = self.cfg._CFAM_BLOCK.IN_CHANNELS #config['CFAMBlock_in_channels']
         out_channels = self.cfg._CFAM_BLOCK.OUT_CHANNELS #config['CFAMBlock_out_channels']                       
         self.CFAMBlock = CFAMBlock(in_channels, out_channels)
         self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
-        # if self.config['head'] == 'binary':
         if self.cfg._HEAD == 'binary':
             self.classifier = nn.Conv2d(out_channels, 2, kernel_size=1, bias=False)
-        # elif self.config['head'] == 'regression':
         elif self.cfg._HEAD == 'regression':
             self.classifier = nn.Conv2d(out_channels, 1, kernel_size=1, bias=False)
     
@@ -109,39 +109,27 @@ class TwoStreamVD_Binary_CFam(nn.Module):
 
         # print('output_3dbackbone: ', x_3d.size())
         # print('output_2dbackbone: ', x_2d.size())
-        if self.with_roipool:
+        if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             batch = int(batch/num_tubes)
             x_3d = self.roi_pool_3d(x_3d,bbox)#torch.Size([8, 528])
             x_3d = torch.squeeze(x_3d, dim=2)
             # x_3d = torch.squeeze(x_3d)
             # print('3d after roipool: ', x_3d.size())
-            x_2d = self.roi_pool_2d(x_2d, bbox)
-            # print('2d after roipool: ', x_2d.size())
         else:
             x_3d = self.temporal_pool(x_3d)
             x_3d = torch.squeeze(x_3d)
             # print('3d after tmppool: ', x_3d.size())
+        
+        if self.cfg._2D_BRANCH.WITH_ROIPOOL:
+            x_2d = self.roi_pool_2d(x_2d, bbox)
+            # print('2d after roipool: ', x_2d.size())
 
         x = torch.cat((x_3d,x_2d), dim=1) #torch.Size([8, 1552, 8, 8])
+        # print('after cat 2 branches: ', x.size())
         x = self.CFAMBlock(x) #torch.Size([8, 145, 8, 8])
         # print('after CFAMBlock: ', x.size())
 
-        if self.with_roipool:
-
-            #++++op 1
-             # x = x.view(batch, 4, 145, 8, 8)
-            # x = self.avg_pool_2d(x)
-            # print('after avgpool 2d: ', x.size())
-            
-            #++++op 2
-            # x = x.view(batch, num_tubes, -1)
-            # print('after view: ', x.size())
-            # x = x.max(dim=1).values #torch.Size([2, 9280])
-            # print('after tmp max pool: ', x.size())
-            # x=self.classifier(x)
-            # print('after las fc: ', x.size())
-
-            #++++op 3
+        if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             b_1, c_1, w_1, h_1 = x.size()
             if self.cfg._HEAD == 'binary':
                 x = x.view(batch, num_tubes, c_1, w_1, h_1)
@@ -164,23 +152,13 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 x = x.max(dim=1).values
                 x = torch.squeeze(x)
                 # print('after max: ', x.size(), x)
-
-
         else:
-            # x = self.avg_pool_2d(x)
-            # x = torch.squeeze(x)
-            # x = x.view(batch, -1)
-            # print('view: ', x.size())
-            # x = self.classifier(x)
-
             x = self.classifier(x)
             # print('after classifier: ', x.size())
             x = self.avg_pool_2d(x)
             # print('after avg_pool_2d: ', x.size())
             x = torch.squeeze(x)
             # print('after squeeze: ', x.size())
-          
-
         return x
         
 
