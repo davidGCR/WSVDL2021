@@ -133,7 +133,7 @@ def resnet_di_transf():
                 norm
             ]),
             'val': transforms.Compose([
-                # transforms.Resize(input_size),
+                transforms.Resize(input_size),
                 # transforms.CenterCrop(input_size),
                 transforms.ToTensor(),
                 norm

@@ -146,26 +146,29 @@ def main(h_path):
                 cfg.TUBE_DATASET.NUM_TUBES, 
                 None,
                 False)
+
+            scheduler.step(train_loss)
+            writer.add_scalar('training loss', train_loss, epoch)
             
-            ap05, ap02 = val_regressor(cfg.TUBE_DATASET,
-                                       make_dataset_val, 
-                                       TWO_STREAM_INPUT_val, 
-                                       model, 
-                                       device, 
-                                       epoch,
-                                       Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips",
-                                       Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"ActionTubesV2/UCFCrime2LocalClips")
+            if (epoch+1)%cfg.SOLVER.VALIDATE_EVERY == 0:
+                ap05, ap02 = val_regressor(cfg.TUBE_DATASET,
+                                        make_dataset_val, 
+                                        TWO_STREAM_INPUT_val, 
+                                        model, 
+                                        device, 
+                                        epoch,
+                                        Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips",
+                                        Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"ActionTubesV2/UCFCrime2LocalClips")
+                writer.add_scalar('AP-0.5', ap05, epoch)
+                writer.add_scalar('AP-0.2', ap02, epoch)
             
-            # scheduler.step(train_loss)
-            # writer.add_scalar('training loss', train_loss, epoch)
-            writer.add_scalar('AP-0.5', ap05, epoch)
-            writer.add_scalar('AP-0.2', ap02, epoch)
+            
 
 
         if (epoch+1)%cfg.SOLVER.SAVE_EVERY == 0:
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_OSX
+    h_path = HOME_UBUNTU
     torch.autograd.set_detect_anomaly(True)
     main(h_path)
