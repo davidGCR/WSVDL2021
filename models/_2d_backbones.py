@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torchvision.models.utils import load_state_dict_from_url
 from typing import Type, Any, Callable, Union, List, Dict, Optional, cast
-from torch import Tensor
 from collections import OrderedDict 
 from torchvision.models.resnet import *
 from torchvision.models.resnet import BasicBlock, Bottleneck
@@ -117,8 +116,8 @@ from torchsummary import summary
 from torchvision import models
 
 if __name__ ==  '__main__':
-    model = Backbone2DResNet('resnet50','fc',num_trainable_layers=3)
-    print(model)
+    model = Backbone2DResNet('resnet101','layer3',num_trainable_layers=3)
+    # print(model)
     # summary(model,input_size=(3, 224, 224))
     
     # model_ft = models.resnet50(pretrained=True)

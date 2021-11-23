@@ -18,21 +18,11 @@ def load_key_frame_config(cfg, split):
         CnnInputConfig: object with config of the 2d branch
     """
     if cfg.KEYFRAME_STRATEGY in [RGB_BEGIN_KEYFRAME, RGB_MIDDLE_KEYFRAME, RGB_RANDOM_KEYFRAME]:
-        # input_2_c={
-        #         'type': 'rgb',
-        #         'spatial_transform': resnet_transf()[split],
-        #         'temporal_transform': None
-        #     }
         input_2_c = CnnInputConfig()
         input_2_c.itype = RGB_FRAME
         input_2_c.spatial_transform = resnet_transf()[split]
 
     elif cfg.KEYFRAME_STRATEGY == DYNAMIC_IMAGE_KEYFRAME:
-        # input_2_c = {
-        #     'type': 'dynamic-image',
-        #     'spatial_transform': resnet_di_transf()[split],
-        #     'temporal_transform': None
-        # }
         input_2_c = CnnInputConfig()
         input_2_c.itype = DYN_IMAGE
         input_2_c.spatial_transform = resnet_di_transf()[split]
@@ -50,7 +40,7 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
         make_dataset_val (function): make function of val/test set
 
     Returns:
-        tuple: (train, val) dataloaders
+        tuple: (train_loader, val_loader, train_dataset, val_dataset) dataloaders and datasets
     """
     # TWO_STREAM_INPUT_train = {
     #     'input_1': {
@@ -99,7 +89,7 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
                         collate_fn=my_collate,
                         drop_last=cfg.DATALOADER.DROP_LAST
                         )
-    return train_loader, val_loader
+    return train_loader, val_loader, train_dataset, val_dataset
 
 
 

@@ -19,7 +19,8 @@ models_2d_ = [
     ]
 
 def cnn3d_transf():
-    sample_size = (224,224)
+    # sample_size = (224,224)
+    
     
     T = {
         'train':Compose(
@@ -33,7 +34,7 @@ def cnn3d_transf():
                     
                     NumpyToTensor()
                 ],
-                probs=[1, 0.4, 0.5, 0.2, 0.3]
+                probs=[1, 0.4, 0.5]
                 ),
         'val': Compose(
                 [
@@ -87,6 +88,7 @@ def i3d_video_transf():
     return T
 
 def resnet_transf():
+    # print('mierdaaaaaa')
     # mean = [0.3833, 0.3768, 0.3709]
     # std = [0.2596, 0.2587, 0.2598]
 

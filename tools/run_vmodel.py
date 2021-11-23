@@ -23,12 +23,14 @@ def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
     
-    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_DYNIMG.yaml")
-    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
-    print(cfg)
+    # print(cfg)
 
-    # test_dataset(cfg)
+    # from debug_model import debug_model
+    # debug_model(cfg.MODEL)
     # exit()
 
 
@@ -44,7 +46,11 @@ def main(h_path):
                                         train=False,
                                         category=2,
                                         shuffle=False)                           
-        train_loader, val_loader = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
+        train_loader, val_loader, train_dataset, val_dataset = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
+
+        # from debug_dataset import test_tube_dataset
+        # test_tube_dataset(train_dataset, val_dataset)
+        # exit()
     
     elif cfg.MODEL._HEAD == REGRESSION:
         make_dataset_train = load_make_dataset(cfg.DATA,
@@ -168,6 +174,6 @@ def main(h_path):
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_UBUNTU
+    h_path = HOME_OSX
     torch.autograd.set_detect_anomaly(True)
     main(h_path)
