@@ -12,7 +12,7 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
     batch_time = AverageMeter()
     end_time = time.time()
     for i, data in enumerate(_loader):
-        boxes, video_images, labels, num_tubes, paths, key_frames = data
+        boxes, video_images, labels, num_tubes, paths, key_frames, _ = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
         key_frames = key_frames.to(_device)
@@ -84,7 +84,7 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     losses = AverageMeter()
     accuracies = AverageMeter()
     for _, data in enumerate(_loader):
-        boxes, video_images, labels, num_tubes, paths, key_frames = data
+        boxes, video_images, labels, num_tubes, paths, key_frames, _ = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
         key_frames = key_frames.to(_device)

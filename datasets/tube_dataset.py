@@ -13,9 +13,8 @@ import torch
 import torch.utils.data as data
 from torch.utils.data import dataset
 from torch.utils.data.sampler import WeightedRandomSampler
+import torchvision.transforms as transforms
 
-# from datasets.make_dataset import *
-# from datasets.make_UCFCrime import *
 from datasets.tube_crop import TubeCrop
 
 from transformations.dynamic_image_transformation import DynamicImage
@@ -98,10 +97,28 @@ class TubeDataset(data.Dataset):
         """
         Format a tube bbox: [x1,y1,x2,y2] to a correct format
         """
-        (width, height) = self.cfg.SHAPE
+        [width, height] = self.cfg.SHAPE
         bbox = bbox[0:4]
         bbox = np.array([max(bbox[0], 0), max(bbox[1], 0), min(bbox[2], width - 1), min(bbox[3], height - 1)])
-        # bbox = np.insert(bbox[0:4], 0, id).reshape(1,-1).astype(float)
+        bbox = bbox.reshape(1,-1).astype(float)
+        if self.cfg.BOX_AS_TENSOR:
+            bbox = torch.from_numpy(bbox).float()
+        return bbox
+    
+    def __scale_bbox__(self, bbox, img_size):
+        """
+        Format a tube bbox: [x1,y1,x2,y2] to a correct format
+        """
+        
+        [width, height] = self.cfg.SHAPE
+        w, h = img_size
+        scale_w = w/width
+        scale_h = h/height
+
+        bbox = bbox[0:4]
+        # bbox = np.array([max(bbox[0], 0), max(bbox[1], 0), min(bbox[2], width - 1), min(bbox[3], height - 1)])
+        bbox = np.array([bbox[0]/scale_w, bbox[1]/scale_h, bbox[2]/scale_w, bbox[3]/scale_h])
+        
         bbox = bbox.reshape(1,-1).astype(float)
         if self.cfg.BOX_AS_TENSOR:
             bbox = torch.from_numpy(bbox).float()
@@ -119,6 +136,7 @@ class TubeDataset(data.Dataset):
             #     print(j, ' ', fp)
             for i in frames_paths:
                 img = imread(i)
+                # print('img shape: ', img.size)
                 tube_images.append(img)
                 _, frame_name = os.path.split(i)
                 
@@ -130,16 +148,19 @@ class TubeDataset(data.Dataset):
                     exit()
                 tube_boxes.append(box_idx)
             
-            tube_boxes = [sampled_tube['boxes'][b] for b in tube_boxes]
-            tube_boxes = [self.__format_bbox__(t) for t in tube_boxes]
+            tube_boxes_raw_size = [sampled_tube['boxes'][b] for b in tube_boxes]
+            # tube_boxes = [self.__format_bbox__(t) for t in tube_boxes_raw_size]
+            tube_boxes = [np.array(t[0:4]).reshape(1,-1).astype(float) for t in tube_boxes_raw_size]
+            # tube_boxes = [self.__scale_bbox__(t, tube_images[j].size) for j, t in enumerate(tube_boxes_raw_size)]
             
             # print('\tube_boxes: ', tube_boxes, len(tube_boxes))
             # print('\t tube_images: ', type(tube_images), type(tube_images[0]))
             raw_clip_images = tube_images.copy()
             if self.config['input_1'].spatial_transform:
                 tube_images_t, tube_boxes_t, t_combination = self.config['input_1'].spatial_transform(tube_images, tube_boxes)
+                # print('Applied transforms: ', t_combination)
        
-        return tube_images_t, tube_boxes_t, tube_boxes, raw_clip_images, t_combination
+        return tube_images_t, tube_boxes_t, tube_boxes, tube_boxes_raw_size, raw_clip_images, t_combination
     
     def load_input_2_di(self, frames_indices, path, frames_names_list):
         frames_paths = [self.build_frame_name(path, i, frames_names_list) for i in frames_indices] #rwf
@@ -224,10 +245,11 @@ class TubeDataset(data.Dataset):
         video_images = []
         video_images_raw = []
         final_tube_boxes = []
+        tube_boxes_raw = []
         num_tubes = len(sampled_frames_indices)
         for frames_indices, sampled_tube in zip(sampled_frames_indices, chosed_tubes):
             # print('\nload_input_1 args: ', path, frames_indices, boxes)
-            tube_images_t, tube_boxes_t, tube_boxes, tube_raw_clip_images, t_combination = self.load_input_1(path, frames_indices, frames_names_list, sampled_tube)
+            tube_images_t, tube_boxes_t, tube_boxes, tube_boxes_raw_size, tube_raw_clip_images, t_combination = self.load_input_1(path, frames_indices, frames_names_list, sampled_tube)
             video_images.append(torch.stack(tube_images_t, dim=0)) #added tensor: torch.Size([16, 224, 224, 3])
             video_images_raw.append(tube_raw_clip_images) #added PIL image
             # print('video_images[-1]: ', video_images[-1].size())
@@ -239,7 +261,9 @@ class TubeDataset(data.Dataset):
                 tube_box = tube_boxes_t[m]
                 id_tensor = torch.tensor([0]).unsqueeze(dim=0).float()
                 # print('\n', ' id_tensor: ', id_tensor,id_tensor.size())
-                # print(' c_box: ', c_box, c_box.size(), ' index: ', m)
+                # print(' tube_box_: ', tube_box, tube_box.size(), ' index: ', m)
+                # print(' tube_box: ', tube_boxes_raw_size[m], tube_box.size())
+                # print(' sampled_tube: ', sampled_tube)
                 if tube_box.size(0)==0:
                     print(' Here error: ', path, index, '\n',
                             tube_box, '\n', 
@@ -251,7 +275,8 @@ class TubeDataset(data.Dataset):
                     exit()
                 f_box = torch.cat([id_tensor , tube_box], dim=1).float()
             elif self.cfg.BOX_STRATEGY == UNION_BOX:
-                all_boxes = [torch.from_numpy(t) for i, t in enumerate(tube_boxes)]
+                # all_boxes = [torch.from_numpy(t) for i, t in enumerate(tube_boxes_t)]
+                all_boxes = [t for i, t in enumerate(tube_boxes_t)]
                 all_boxes = torch.stack(all_boxes, dim=0).squeeze()
                 mins, _ = torch.min(all_boxes, dim=0)
                 x1 = mins[0].unsqueeze(dim=0).float()
@@ -269,24 +294,43 @@ class TubeDataset(data.Dataset):
         
         #load keyframes
         key_frames = []
+        key_frames_raw = []
         if self.config['input_2'] is not None:
-            for k in range(len(video_images_raw)):
+            for k in range(len(video_images)):
                 if self.cfg.KEYFRAME_STRATEGY == DYNAMIC_IMAGE_KEYFRAME:
                     # key_frame, _ = self.load_input_2_di(sampled_frames_indices[k], path, frames_names_list)
                     key_frame = self.dynamic_image_fn(video_images[k])
+                    # key_frames_raw.append(key_frame)
+                    if self.cfg.KEYFRAME_CROP:
+                        rect = final_tube_boxes[k][1:5]
+                        key_frame = key_frame.crop((rect[0].item(),rect[1].item(),rect[2].item(),rect[3].item()))
+                        key_frame = key_frame.resize((self.cfg.SHAPE[0], self.cfg.SHAPE[1]))
+                    # key_frames_raw.append(key_frame)
                     if self.config['input_2'].spatial_transform:
                         key_frame = self.config['input_2'].spatial_transform(key_frame)
-                else:
-                    if self.cfg.KEYFRAME_STRATEGY == RGB_MIDDLE_KEYFRAME:
-                        m = int(video_images[k].size(0)/2) #using frames loaded from 3d branch
-                        key_frame = video_images[k][m] #tensor 
-                        key_frame = key_frame.numpy()
-                        if self.config['input_2'].spatial_transform:
-                            key_frame = self.config['input_2'].spatial_transform(key_frame)
+                    key_frames_raw.append(transforms.ToPILImage()(key_frame))
+                elif self.cfg.KEYFRAME_STRATEGY == RGB_MIDDLE_KEYFRAME:
+                    m = int(video_images[k].size(0)/2) #using frames loaded from 3d branch
+                    key_frame = video_images[k][m] #tensor torch.Size([224, 224, 3])
+                    #TODO multiply per 255????
+                    key_frame_pil = transforms.ToPILImage()(key_frame.permute(2,0,1)) #(224, 224)
+                    # key_frames_raw.append(key_frame_pil)
+                    if self.cfg.KEYFRAME_CROP:
+                        rect = final_tube_boxes[k][1:5]
+                        key_frame = key_frame_pil.crop((rect[0].item(),rect[1].item(),rect[2].item(),rect[3].item()))
+                        key_frame = key_frame.resize((self.cfg.SHAPE[0], self.cfg.SHAPE[1]))
                     else:
-                        #TODO
-                        print('Not implemented yet...')
-                        exit()
+                        key_frame = key_frame_pil
+                    
+                    if self.config['input_2'].spatial_transform:
+                        key_frame = self.config['input_2'].spatial_transform(key_frame) #torch.Size([3, 224, 224])
+                        # print('key_frame transformed: ', key_frame.size())
+                    
+                    key_frames_raw.append(transforms.ToPILImage()(key_frame))
+                else:
+                    #TODO
+                    print('Not implemented yet...')
+                    exit()
                 key_frames.append(key_frame)
         
         #padding
@@ -315,7 +359,7 @@ class TubeDataset(data.Dataset):
             # print('key_frames: ', key_frames.size())
             # print('final_tube_boxes: ', final_tube_boxes,  final_tube_boxes.size())
             # print('label: ', label)
-            return final_tube_boxes, video_images, label, num_tubes, path, key_frames
+            return final_tube_boxes, video_images, label, num_tubes, path, key_frames, key_frames_raw
         else:
             return final_tube_boxes, video_images, label, num_tubes, path
 
