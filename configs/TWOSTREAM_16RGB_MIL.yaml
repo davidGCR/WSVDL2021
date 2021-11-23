@@ -20,8 +20,8 @@ MODEL:
   _3D_BRANCH: 
     NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: /Users/davidchoqueluqueroman/Documents/CODIGOS_SOURCES/pytorch-i3d/models/rgb_imagenet.pt
-    FREEZE_3D: True
+    PRETRAINED_MODEL: /media/david/datos/Violence DATA/VioNet_weights/pytorch_i3d/rgb_imagenet.pt
+    FREEZE_3D: False
   _ROI_LAYER:
     OUTPUT: 8
     WITH_TEMPORAL_POOL: True
@@ -68,5 +68,6 @@ SOLVER:
     NAME: SGD
     FACTOR: 0.1
     MIN_LR: 0.0000001
-  EPOCHS: 100
+  EPOCHS: 200
   SAVE_EVERY: 10
+  VALIDATE_EVERY: 20
