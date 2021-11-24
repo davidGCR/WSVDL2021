@@ -49,9 +49,10 @@ class Compose(object):
                 prob = self.probs
             p = random.random()
             if p < prob:
-                combination.append((p, t.__class__.__name__))
+                
                 # print(p, t.__class__.__name__)
                 img_group, bboxes = t(img_group, bboxes)
+                combination.append((p, t.__class__.__name__, bboxes))
                 # print("\ntransf: {}/ out: {}/ len: {}".format(type(t), type(img_group), len(img_group)))
         for t in self.transforms:
             imgs_list = []
@@ -182,7 +183,7 @@ class ClipRandomScale(object):
         return img, bboxes
 
     def __call__(self, img_group, bboxes):
-        print('\t ClipRandomScale')
+        # print('\t ClipRandomScale')
         # img_group = checkInputs(img_group)
         # print('\t ClipRandomScale')
         imgs = []

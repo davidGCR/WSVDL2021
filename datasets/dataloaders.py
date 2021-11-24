@@ -42,28 +42,10 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
     Returns:
         tuple: (train_loader, val_loader, train_dataset, val_dataset) dataloaders and datasets
     """
-    # TWO_STREAM_INPUT_train = {
-    #     'input_1': {
-    #         'type': 'rgb',
-    #         'spatial_transform': cnn3d_transf()['train'],
-    #         'temporal_transform': None
-    #     },
-    #     'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
-    # }
     TWO_STREAM_INPUT_train = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
         'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
     }
-    
-    # TWO_STREAM_INPUT_val = {
-    #     'input_1': {
-    #         'type': 'rgb',
-    #         # 'spatial_transform': i3d_video_transf()['val'],
-    #         'spatial_transform': cnn3d_transf()['val'],
-    #         'temporal_transform': None
-    #     },
-    #     'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val')
-    # }
     TWO_STREAM_INPUT_val = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None),
         'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val') 

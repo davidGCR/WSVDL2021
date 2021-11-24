@@ -19,7 +19,7 @@ MODEL:
   _3D_BRANCH: 
     NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: /Users/davidchoqueluqueroman/Documents/CODIGOS_SOURCES/pytorch-i3d/models/rgb_imagenet.pt
+    PRETRAINED_MODEL: /media/david/datos/Violence DATA/VioNet_weights/pytorch_i3d/rgb_imagenet.pt
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:

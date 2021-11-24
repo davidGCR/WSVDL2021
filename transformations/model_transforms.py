@@ -28,13 +28,13 @@ def cnn3d_transf():
                     ClipResize(224),
                     ClipRandomHorizontalFlip(), 
                     # ClipRandomScale(scale=0.2, diff=True), 
-                    ClipRandomRotate(angle=5),
+                    # ClipRandomRotate(angle=5),
                     # ClipRandomTranslate(translate=0.1, diff=True),
                     # ClipRandomScale(scale=0.2, diff=True),
                     
                     NumpyToTensor()
                 ],
-                probs=[1, 0.4, 0.5]
+                probs=[1, 0.4, 0.5, 0.3]
                 ),
         'val': Compose(
                 [

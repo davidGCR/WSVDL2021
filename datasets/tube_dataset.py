@@ -151,13 +151,40 @@ class TubeDataset(data.Dataset):
             tube_boxes_raw_size = [sampled_tube['boxes'][b] for b in tube_boxes]
             # tube_boxes = [self.__format_bbox__(t) for t in tube_boxes_raw_size]
             tube_boxes = [np.array(t[0:4]).reshape(1,-1).astype(float) for t in tube_boxes_raw_size]
+            tube_boxes = [np.where(t<0, 0, t).reshape(1,-1).astype(float) for t in tube_boxes]
+            
             # tube_boxes = [self.__scale_bbox__(t, tube_images[j].size) for j, t in enumerate(tube_boxes_raw_size)]
             
             # print('\tube_boxes: ', tube_boxes, len(tube_boxes))
             # print('\t tube_images: ', type(tube_images), type(tube_images[0]))
             raw_clip_images = tube_images.copy()
             if self.config['input_1'].spatial_transform:
-                tube_images_t, tube_boxes_t, t_combination = self.config['input_1'].spatial_transform(tube_images, tube_boxes)
+                tube_images_t, tube_boxes_t, t_combination = self.config['input_1'].spatial_transform(tube_images, tube_boxes.copy())
+                for i,tb in enumerate(tube_boxes_t):
+                    if tb.size(0)==0:
+                        print('error in Resize: ', tb, t_combination)
+                        img = np.array(tube_images[i])
+                        box = tube_boxes[i]
+                        w,h = img.shape[1], img.shape[0]
+                        print('w,h :', w, h)
+                        # img = letterbox_image(img, self.inp_dim)
+                        inp_dim = 224
+                        scale = min(inp_dim/h, inp_dim/w)
+                        print('scale :', scale)
+                        box[:,:4] *= (scale)
+                        print('box :', box)
+                        new_w = scale*w
+                        new_h = scale*h
+                    
+                        del_h = (inp_dim - new_h)/2
+                        del_w = (inp_dim - new_w)/2
+                    
+                        add_matrix = np.array([[del_w, del_h, del_w, del_h]]).astype(int)
+                        print('add_matrix :', add_matrix)
+                        box[:,:4] += add_matrix
+                        print('box :', box)
+                        box = torch.from_numpy(box).float()
+                        print('box tensor:', box, box.size())
                 # print('Applied transforms: ', t_combination)
        
         return tube_images_t, tube_boxes_t, tube_boxes, tube_boxes_raw_size, raw_clip_images, t_combination
@@ -277,7 +304,15 @@ class TubeDataset(data.Dataset):
             elif self.cfg.BOX_STRATEGY == UNION_BOX:
                 # all_boxes = [torch.from_numpy(t) for i, t in enumerate(tube_boxes_t)]
                 all_boxes = [t for i, t in enumerate(tube_boxes_t)]
-                all_boxes = torch.stack(all_boxes, dim=0).squeeze()
+                # print('\nall boxes: ', all_boxes, len(all_boxes))
+                try:
+                    all_boxes = torch.stack(all_boxes, dim=0).squeeze()
+                except RuntimeError as e:
+                    print(str(e))
+                    print('video: ', path)
+                    for i in range(len(all_boxes)):
+                        print('-b:',i , all_boxes[i], tube_boxes_t[i], tube_boxes_raw_size[i])
+                    print('tube: ', sampled_tube)
                 mins, _ = torch.min(all_boxes, dim=0)
                 x1 = mins[0].unsqueeze(dim=0).float()
                 y1 = mins[1].unsqueeze(dim=0).float()
@@ -355,11 +390,12 @@ class TubeDataset(data.Dataset):
                 print('Detected Nan at: ', path)
             if torch.isinf(key_frames).any().item():
                 print('Detected Inf at: ', path)
+            # print('hereeeeeeeee')
             # print('video_images: ', video_images.size())
             # print('key_frames: ', key_frames.size())
             # print('final_tube_boxes: ', final_tube_boxes,  final_tube_boxes.size())
             # print('label: ', label)
-            return final_tube_boxes, video_images, label, num_tubes, path, key_frames, key_frames_raw
+            return final_tube_boxes, video_images, label, num_tubes, path, key_frames#, key_frames_raw
         else:
             return final_tube_boxes, video_images, label, num_tubes, path
 
