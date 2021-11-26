@@ -51,7 +51,7 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
         'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val') 
     }
 
-    train_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_train, TWO_STREAM_INPUT_train, cfg.DATA.DATASET)
+    train_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_train, TWO_STREAM_INPUT_train, cfg.DATA.DATASET, True)
     train_loader = DataLoader(train_dataset,
                         batch_size=cfg.DATALOADER.TRAIN_BATCH,
                         # shuffle=False,
@@ -61,7 +61,7 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
                         sampler=train_dataset.get_sampler(),
                         drop_last=cfg.DATALOADER.DROP_LAST
                         )
-    val_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_val, TWO_STREAM_INPUT_val, cfg.DATA.DATASET)
+    val_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_val, TWO_STREAM_INPUT_val, cfg.DATA.DATASET, False)
     val_loader = DataLoader(val_dataset,
                         batch_size=cfg.DATALOADER.VAL_BATCH,
                         # shuffle=True,

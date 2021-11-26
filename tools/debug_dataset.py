@@ -113,20 +113,25 @@ def test_dataset(cfg):
 
 
 def test_tube_dataset(train_dataset, val_dataset):
-    final_tube_boxes, video_images, label, num_tubes, path, key_frames, key_frames_raw = train_dataset[0]
-    print('final_tube_boxes: ', final_tube_boxes, final_tube_boxes.size())
-    print('key_frames: ', len(key_frames_raw), type(key_frames_raw[0]))
-    final_tube_boxes = final_tube_boxes.cpu().numpy()
-    for k, im in enumerate(key_frames_raw):
-        # rect = final_tube_boxes[k,1:5]
-        # print('\n',k,'\n')
-        # print(k, rect)
-        # print("input crop: ",rect[0],rect[1],rect[2],rect[3], rect.reshape(1,-1))
-        # plot_keyframe(np.array(im), rect.reshape(1,-1))
-        # im_c = im.crop((rect[0],rect[1],rect[2],rect[3]))
-        # im_c = im_c.resize(im.size)
-        # plt.imshow(np.array(im_c))
-        # plt.show()
+    final_tube_boxes, video_images, labels, path, key_frames = train_dataset[0]
+    print('video_images: ', video_images.size())
+    print('key_frames: ', key_frames.size())
+    print('final_tube_boxes: ', final_tube_boxes,  final_tube_boxes.size())
+    print('labels: ', labels)
 
-        plt.imshow(np.array(im))
-        plt.show()
+    # print('final_tube_boxes: ', final_tube_boxes, final_tube_boxes.size())
+    # print('key_frames: ', len(key_frames_raw), type(key_frames_raw[0]))
+    # final_tube_boxes = final_tube_boxes.cpu().numpy()
+    # for k, im in enumerate(key_frames_raw):
+    #     # rect = final_tube_boxes[k,1:5]
+    #     # print('\n',k,'\n')
+    #     # print(k, rect)
+    #     # print("input crop: ",rect[0],rect[1],rect[2],rect[3], rect.reshape(1,-1))
+    #     # plot_keyframe(np.array(im), rect.reshape(1,-1))
+    #     # im_c = im.crop((rect[0],rect[1],rect[2],rect[3]))
+    #     # im_c = im_c.resize(im.size)
+    #     # plt.imshow(np.array(im_c))
+    #     # plt.show()
+
+    #     plt.imshow(np.array(im))
+    #     plt.show()

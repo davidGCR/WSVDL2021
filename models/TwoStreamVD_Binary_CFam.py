@@ -93,9 +93,9 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         # if self.config['backbone_name'] == 'i3d':
         if self.cfg._3D_BRANCH.NAME == 'i3d':
             backbone = BackboneI3D(
-                self.cfg._3D_BRANCH.FINAL_ENDPOINT,#self.config['final_endpoint'], 
-                self.cfg._3D_BRANCH.PRETRAINED_MODEL,#self.config['pretrained_backbone_model'],
-                freeze=self.cfg._3D_BRANCH.FREEZE_3D#self.config['freeze_3d']
+                self.cfg._3D_BRANCH.FINAL_ENDPOINT,
+                self.cfg._3D_BRANCH.PRETRAINED_MODEL,
+                freeze=self.cfg._3D_BRANCH.FREEZE_3D
                 )
         elif self.cfg._3D_BRANCH.NAME == '3dresnet':
             backbone = Backbone3DResNet()
@@ -117,8 +117,9 @@ class TwoStreamVD_Binary_CFam(nn.Module):
             # print('3d after roipool: ', x_3d.size())
         else:
             x_3d = self.temporal_pool(x_3d)
-            x_3d = torch.squeeze(x_3d)
             # print('3d after tmppool: ', x_3d.size())
+            x_3d = torch.squeeze(x_3d)
+            # print('3d after squeeze: ', x_3d.size())
         
         if self.cfg._2D_BRANCH.WITH_ROIPOOL:
             x_2d = self.roi_pool_2d(x_2d, bbox)
@@ -131,6 +132,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
 
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             b_1, c_1, w_1, h_1 = x.size()
+
             if self.cfg._HEAD == 'binary':
                 x = x.view(batch, num_tubes, c_1, w_1, h_1)
                 x = x.max(dim=1).values
@@ -153,6 +155,11 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 x = torch.squeeze(x)
                 # print('after max: ', x.size(), x)
         else:
+            batch = int(batch/num_tubes)
+            b_1, c_1, w_1, h_1 = x.size()
+            # print('before tube max pool: ',b_1, c_1, w_1, h_1)
+            x = x.view(batch, num_tubes, c_1, w_1, h_1)
+            x = x.max(dim=1).values
             x = self.classifier(x)
             # print('after classifier: ', x.size())
             x = self.avg_pool_2d(x)

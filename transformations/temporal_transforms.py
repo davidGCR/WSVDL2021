@@ -447,15 +447,16 @@ if __name__ == '__main__':
 # 
     # temp_transform = SequentialCrop(size=5,stride=1,overlap=0.7, max_segments=16)
     # temp_transform = KeySegmentCrop(size=16,stride=1,input_type="rgb", segment_type="highestscore")
-    temp_transform = SegmentsCrop(size=6, segment_size=10, stride=1,overlap=0,padding=True, position='middle')
+    # temp_transform = SegmentsCrop(size=6, segment_size=10, stride=1,overlap=0,padding=True, position='middle')
     # temp_transform = IntervalCrop(intervals_num=16, interval_len=5, overlap=0.7)
-    frames = list(range(1, 121))
+    
 
     # frames = temp_transform(frames, "/Users/davidchoqueluqueroman/Documents/CODIGOS/AVSS2019/src/VioNet/v4dhdnsxiX4_1.csv", 0)
     # frames = temp_transform(frames, "/Users/davidchoqueluqueroman/Documents/CODIGOS/AVSS2019/src/VioNet/fbtEhNq5a6E_0.csv")
     # frames = temp_transform(frames, "/Users/davidchoqueluqueroman/Documents/DATASETS_Local/rwf-vscores/val/NonFight/NeyOxUHJ_0.csv")
-    # temp_transform = CenterCrop(size=16, stride=1)
-    # temp_transform = RandomCrop(size=16, stride=1)
+    temp_transform = CenterCrop(size=16, stride=3)
+    # temp_transform = RandomCrop(size=32, stride=2)
+    frames = list(range(1, 150))
     frames = temp_transform(frames)
     print(frames)
     print(len(frames))

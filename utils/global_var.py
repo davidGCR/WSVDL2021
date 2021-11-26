@@ -78,6 +78,7 @@ DYNAMIC_IMAGE_KEYFRAME = 3
 DYN_IMAGE = "dynamic-image"
 RGB_FRAME = "rgb"
 
+
 from pathlib import Path
 WORK_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parents[0]
 

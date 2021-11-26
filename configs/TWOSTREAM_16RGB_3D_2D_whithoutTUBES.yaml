@@ -21,20 +21,14 @@ MODEL:
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
     PRETRAINED_MODEL: /media/david/datos/Violence DATA/VioNet_weights/pytorch_i3d/rgb_imagenet.pt
     FREEZE_3D: False
-    WITH_ROIPOOL: True
-  _ROI_LAYER:
-    OUTPUT: 8
-    WITH_TEMPORAL_POOL: True
-    SPATIAL_SCALE: 16
-    WITH_SPATIAL_POOL: False
-    TYPE: RoIAlign
+    WITH_ROIPOOL: False
   _2D_BRANCH:
     NAME: resnet50
     FINAL_ENDPOINT: layer3
     NUM_TRAINABLE_LAYERS: 3
-    WITH_ROIPOOL: True
+    WITH_ROIPOOL: False
   _CFAM_BLOCK:
-    IN_CHANNELS: 1552 #528+1024 #528+1024,#528+1024, #832+2048
+    IN_CHANNELS: 1552 #1552 #528+1024 #528+1024,#528+1024, #832+2048
     OUT_CHANNELS: 512
   _FC:
     INPUT_DIM: 32768 #8*8*512,#512#7105#145,#9280
@@ -51,13 +45,13 @@ DATALOADER:
   DROP_LAST: True
 
 TUBE_DATASET:
-  USE_TUBES: True
+  USE_TUBES: False
   NUM_FRAMES: 16
-  NUM_TUBES: 3
+  NUM_TUBES: 1
   RANDOM: True
-  FRAMES_STRATEGY: 0
-  BOX_STRATEGY: 1 #0:middle, 1: union, 2: all
-  KEYFRAME_STRATEGY: 0 #0: rgb middle frame , 3:dynamic_images
+  FRAMES_STRATEGY: 0 #0: middle, 1: evenly
+  BOX_STRATEGY: 1 #0: middle, 1: union box, 2: all frames
+  KEYFRAME_STRATEGY: 3 #0: rgb middle frame , 3:dynamic_images
   KEYFRAME_CROP: False
   SHAPE: [224,224]
   MAKE_FN: None
