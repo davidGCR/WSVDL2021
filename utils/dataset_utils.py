@@ -24,6 +24,11 @@ def imread(path, resize=None):
     except Exception as e:
         print("\nOops!", e.__class__, "occurred. Path: ", path)
 
+def read_JSON_ann(json_file):
+    with open(json_file, "r") as read_file:
+        data = json.load(read_file)
+        return data
+
 def JSON_2_tube(json_file):
     """
     """

@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 import re
+import pandas as pd
 from utils.visual_utils import draw_boxes, imread, color
 from utils.tube_utils import bbox_iou_numpy, merge_bboxes, merge_bboxes_numpy, create_video
 
@@ -201,9 +202,13 @@ class IncrementalLinking:
         images = []
         for f in segment:
             # print('f inm segment: ', f, len(self.video_detections))
-            split = self.video_detections[f]['split']
-            video = self.video_detections[f]['video']
-            frame = self.video_detections[f]['fname']
+            try:
+                split = self.video_detections[f]['split']
+                video = self.video_detections[f]['video']
+                frame = self.video_detections[f]['fname']
+            except Exception as e:
+                print("\nOops! Read segment exception: ", e.__class__, "occurred.\n", e)
+                print("segment: ", segment, " index: ", f)
             img_path = os.path.join(self.dataset_root, split, video, frame)
             assert os.path.isfile(img_path), print('File: {} does not exist!!!'.format({img_path}))
             img_paths.append(img_path)
@@ -511,21 +516,38 @@ class IncrementalLinking:
 
     def fill_gaps(self, live_paths, real_indices, real_frame_names):
         for i in range(len(live_paths)):
+            original_tube = live_paths[i].copy()
             # if not self.is_dead(live_paths[i]):
             if True:
-                # print('Filling live_path: {}:\n{}'.format(i+1, live_paths[i]))
+                # print('\nFilling live_path: {}:\n{}'.format(i+1, live_paths[i]))
+                # print('real_indices: ', real_indices, len(real_indices))
+                # print('real_frame_names: ', real_frame_names, len(real_frame_names))
+
                 foundAt = live_paths[i]['foundAt']
                 framesNames = live_paths[i]['frames_name']
 
-                start_idx = foundAt[0]
-                end_idx = foundAt[-1]
-
-                real_segment = real_indices[start_idx:end_idx+1]
+                start_idx = real_indices.index(foundAt[0])
+                
+                if not real_indices.count(foundAt[-1])>1:
+                    end_idx = real_indices.index(foundAt[-1])
+                else:
+                    #Get index of last element with repetitions
+                    # example: real_indices = [2, 2, 3, 3, 4, 5, 5, 6]
+                    d1 = {item:real_indices.count(item) for item in real_indices} #count repeat = {2: 2, 3: 2, 4: 1, 5: 2, 6: 1}
+                    elems = list(filter(lambda x: d1[x] > 1, d1)) #repeated elements = [2, 3, 5]
+                    d2 = dict(zip(range(0, len(real_indices)), real_indices)) #indice of each element ={0: 2, 1: 2, 2: 3, 3: 3, 4: 4, 5: 5, 6: 5, 7: 6}
+                    res = {item: list(filter(lambda x: d2[x] == item, d2)) for item in elems} #{2: [0, 1], 3: [2, 3], 5: [5, 6]}
+                    end_idx = res[foundAt[-1]][-1]
+                # real_segment = real_indices[start_idx:end_idx+1]
+                real_segment_indices = list(range(start_idx,end_idx+1))
                 missed_indices = []
                 missed_frames = []
                 indices_to_insert = []
-                for k_idx, j in enumerate(real_segment):
-                    if not j in foundAt:
+                # print('start_idx: ', start_idx)
+                # print('end_idx: ', end_idx)
+                # print('real_segment_indices: ', real_segment_indices)
+                for k_idx, j in enumerate(real_segment_indices):
+                    if not real_indices[j] in foundAt:
                         missed_indices.append(j)
                         missed_frames.append(real_frame_names[j])
                         indices_to_insert.append(k_idx)
@@ -537,17 +559,20 @@ class IncrementalLinking:
                 new_boxes = live_paths[i]['boxes'].copy()
                 new_frames_name = live_paths[i]['frames_name'].copy()
                 for ii, mi in zip(indices_to_insert, missed_indices):
-                    new_founAt.insert(ii, mi)
+                    new_founAt.insert(ii, real_indices[mi])
                     new_frames_name.insert(ii, real_frame_names[mi])
                     # new_boxes.insert(ii, live_paths[i]['boxes'][ii-1]) #replace with previous box
                     new_boxes.insert(ii, new_boxes[ii-1]) #replace with previous box
 
+                if len(new_founAt)>len(foundAt):
+                    live_paths[i]['without_fill_gap'] = (framesNames, foundAt)      
                 live_paths[i]['foundAt'] = new_founAt  
                 live_paths[i]['frames_name'] = new_frames_name  
                 live_paths[i]['boxes'] = new_boxes  
                 live_paths[i]['len'] += len(missed_frames)
                 
-                assert new_founAt == real_segment, 'Filling lp error!!!'
+                assert new_founAt == real_indices[start_idx:end_idx+1], 'Filling lp error: \noriginal_tube: {} \nnew_founAt: {} is different to: \n real_indices[start_idx:end_idx+1]:{}'.format(original_tube, new_founAt,real_indices[start_idx:end_idx+1])
+                # print('\tlive_path filled: {}:\n{}'.format(i+1, live_paths[i]))
                 # print('path: {}, foundAt: {}, real_segment: {}, missed_indices: {}, indices_to_insert: {} = {}'.format(i+1, foundAt, real_segment, missed_indices, indices_to_insert, new_founAt))
 
     def plot_frame(

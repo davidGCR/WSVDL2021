@@ -22,10 +22,11 @@ from pathlib import Path
 def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
-    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutTUBES.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
-    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     # print(cfg)
@@ -34,8 +35,18 @@ def main(h_path):
     # debug_model(cfg.MODEL)
     # exit()
 
+    # from debug_dataset import test_cctvfights_datasets
+    # from datasets.dataloaders import data_with_tubes_for_CCTVFights
+    # transforms_config_train, transforms_config_val = data_with_tubes_for_CCTVFights(cfg, None, None)
+    # test_cctvfights_datasets(cfg.TUBE_DATASET, transforms_config_train, transforms_config_val)
+    # exit()
+
+    # from debug_tubegen import test_tubegen_CCTVFights_dataset
+    # test_tubegen_CCTVFights_dataset()
+    # exit()
+
     device = get_torch_device()
-    if cfg.MODEL._HEAD == BINARY:
+    if cfg.MODEL._HEAD.NAME == BINARY:
         make_dataset_train = load_make_dataset(cfg.DATA,
                                         env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
                                         train=True,
@@ -52,7 +63,7 @@ def main(h_path):
         # test_tube_dataset(train_dataset, val_dataset)
         # exit()
     
-    elif cfg.MODEL._HEAD == REGRESSION:
+    elif cfg.MODEL._HEAD.NAME == REGRESSION:
         make_dataset_train = load_make_dataset(cfg.DATA,
                                         env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
                                         train=True,
@@ -62,8 +73,10 @@ def main(h_path):
         train_loader, TWO_STREAM_INPUT_val = data_with_tubes_localization(cfg, make_dataset_train)
         # from debug_loc_dataset import debug_ucfcrime2localclips_dataset
         # debug_ucfcrime2localclips_dataset(make_dataset_val, TWO_STREAM_INPUT_val)
+    else:
+        print("Error: Unrecognized head name!!!")
+        raise NotImplementedError()
     
-    # exit()
 
     model = TwoStreamVD_Binary_CFam(cfg.MODEL).to(device)
     params = model.parameters()
@@ -116,7 +129,7 @@ def main(h_path):
         min_lr=cfg.SOLVER.OPTIMIZER.MIN_LR)
     
     for epoch in range(start_epoch, cfg.SOLVER.EPOCHS):
-        if cfg.MODEL._HEAD == BINARY:
+        if cfg.MODEL._HEAD.NAME == BINARY:
             train_loss, train_acc, train_time = train(
                 train_loader, 
                 epoch, 
@@ -140,7 +153,7 @@ def main(h_path):
             scheduler.step(val_loss)
             writer.add_scalar('validation loss', val_loss, epoch)
             writer.add_scalar('validation accuracy', val_acc, epoch)
-        elif cfg.MODEL._HEAD == REGRESSION:
+        elif cfg.MODEL._HEAD.NAME == REGRESSION:
             train_loss, train_acc = train_regressor(
                 train_loader, 
                 epoch, 
@@ -166,14 +179,16 @@ def main(h_path):
                                         Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"ActionTubesV2/UCFCrime2LocalClips")
                 writer.add_scalar('AP-0.5', ap05, epoch)
                 writer.add_scalar('AP-0.2', ap02, epoch)
-            
-            
+        
+        else:
+            print("Error: Unrecognized head name!!!")
+            raise NotImplementedError()
 
 
         if (epoch+1)%cfg.SOLVER.SAVE_EVERY == 0:
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_UBUNTU
+    h_path = HOME_OSX
     torch.autograd.set_detect_anomaly(True)
     main(h_path)

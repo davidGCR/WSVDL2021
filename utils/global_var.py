@@ -17,6 +17,7 @@ FEAT_EXT_RESNEXT_S3D = "resnetxt+s3d"
 FEAT_EXT_RESNET = "resnet"
 
 RWF_DATASET = "RWF-2000"
+CCTVFight_DATASET = "CCTVFights"
 HOCKEY_DATASET = "HockeyFightsDATASET"
 RLVSD_DATASET = "RealLifeViolenceDataset"
 UCFCrime_DATASET = "UCFCrime"

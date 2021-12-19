@@ -1,4 +1,7 @@
 
+from os import path
+
+from torch._C import _LegacyVariableBase
 from transformations.data_aug.data_aug import *
 # from model_transformations import i3d_video_transf, resnet_transf
 
@@ -8,8 +11,11 @@ from torchvision import transforms
 from datasets.make_dataset import *
 from datasets.make_UCFCrime import *
 from datasets.tube_dataset import *
+from datasets.CCTVFights_dataset import * 
+from datasets.make_cctvfights import make_CCTVFights_dataset, make_CCTVFights_dataset_clips
 
 from utils.vizualize_batch import *
+from utils.dataset_utils import read_JSON_ann
 import matplotlib.pyplot as plt
 
 def test_dataset(cfg):
@@ -135,3 +141,59 @@ def test_tube_dataset(train_dataset, val_dataset):
 
     #     plt.imshow(np.array(im))
     #     plt.show()
+
+
+def test_cctvfights_datasets(cfg, transforms_config_train, transforms_config_val):
+    root = "/Users/davidchoqueluqueroman/Documents/DATASETS_Local/CCTVFights/frames/fights"
+    json_file = "/Users/davidchoqueluqueroman/Documents/DATASETS_Local/CCTVFights/groundtruth_modified.json"
+    pers_annotations_folder = "/Users/davidchoqueluqueroman/Documents/DATASETS_Local/PersonDetections/CCTVFights/fights"
+    data = read_JSON_ann(json_file)
+    print(data["version"])
+
+    make_fn = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, "validation")
+
+    paths, labels, indices, tmp_annotations, pers_annotations = make_fn()
+    print('paths: ', len(paths))
+    print('labels: ', len(labels))
+    print('indices: ', len(indices))
+    print('tmp_annotations: ', len(tmp_annotations))
+    print('pers_annotations: ', len(pers_annotations))
+
+    print('======Statictics=====')
+    count_fight = sum(map(lambda x : x["label"]=="Fight", tmp_annotations))
+    count_nonfight = sum(map(lambda x : x["label"]=="NonFight", tmp_annotations))
+    print('fight instances: ', count_fight)
+    print('nonfight instances: ', count_nonfight)
+
+    # idx = 100
+    # print('paths[]: ', paths[idx])
+    # print('labels[]: ', labels[idx])
+    # print('indices[]: ', indices[idx])
+    # print('tmp_annotations[]: ', tmp_annotations[idx])
+    
+    dataset_ = ClipDataset(
+                            cfg,
+                            32, 
+                            1, 
+                            paths, 
+                            labels, 
+                            tmp_annotations, 
+                            pers_annotations, 
+                            False, 
+                            transforms_config_train, #transforms.ToTensor(), 
+                            True
+                            )
+    for i in range(len(dataset_)):
+        path, label, tmp_annotation, pers_annotation, clip, sampled_clip, video_images, video_boxes, keyframes = dataset_[i]
+        print("\npath: {}/label: {}".format(path, label))
+        print("tmp_annot: {}".format(tmp_annotation))
+        print("pers_annotation: {}".format(pers_annotation))
+        print("clip: {}/{}, sampled_clip: {}/{}".format(clip, len(clip), sampled_clip, len(sampled_clip)))
+        print("video_images: ", video_images.size())
+        print("video_boxes: ", video_boxes.size())
+        print("keyframes: ", keyframes.size())
+        if i == 1:
+            break
+
+
+    

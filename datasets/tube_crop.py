@@ -14,7 +14,7 @@ class TubeCrop(object):
                     central_frame=True, 
                     max_num_tubes=4, 
                     # train=True,
-                    input_type=RGB_FRAME,
+                    # input_type=RGB_FRAME,
                     sample_strategy=MIDDLE_FRAMES,#'middle', #'evenly'
                     # boxes_sample_strategy=MIDDLE,
                     random=True,
@@ -27,14 +27,14 @@ class TubeCrop(object):
         self.central_frame = central_frame
         self.max_num_tubes = max_num_tubes
         # self.train = train
-        self.input_type = input_type
+        # self.input_type = input_type
         self.random = random
         self.sample_strategy = sample_strategy
         # self.boxes_sample_strategy = boxes_sample_strategy
         self.box_as_tensor = box_as_tensor
         self.shape = shape
 
-    def __call__(self, tubes: list,):
+    def __call__(self, tubes: list):
         num_tubes = len(tubes)
         segments = []
         if self.max_num_tubes == 0: #all tubes
@@ -55,10 +55,11 @@ class TubeCrop(object):
                 chosed_tubes = tubes[0:self.max_num_tubes]
 
         for tube in chosed_tubes:
-            if self.input_type==RGB_FRAME:
-                frames_idxs = self.__sampled_tube_frames_indices__(tube['foundAt'])
-            else:
-                frames_idxs = self.__centered_segments__()
+            frames_idxs = self.__sampled_tube_frames_indices__(tube['foundAt'])
+            # if self.input_type==RGB_FRAME:
+            #     frames_idxs = self.__sampled_tube_frames_indices__(tube['foundAt'])
+            # else:
+            #     frames_idxs = self.__centered_segments__()
             segments.append(frames_idxs)
 
         return segments, chosed_tubes
@@ -80,6 +81,8 @@ class TubeCrop(object):
             return centered_array.tolist()
         if len(tube_found_at) < self.tube_len: #padding
             min_frame = tube_found_at[0]
+            # TODO 
+            # correct for stride>1
             tube_frames_idxs = np.linspace(min_frame, max_video_len, self.tube_len).astype(int)
             tube_frames_idxs = tube_frames_idxs.tolist()
             # center_idx = int(len(tube_frames_idxs)/2)

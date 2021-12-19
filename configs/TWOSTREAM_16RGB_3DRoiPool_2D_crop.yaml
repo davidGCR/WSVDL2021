@@ -15,8 +15,10 @@ MODEL:
   NAME: TWO_STREAM_CFAM_CONFIG
   RESTORE_TRAIN: False
   CHECKPOINT_PATH: None
-  _HEAD: binary
+  _HEAD: 
+    NAME: binary
   _3D_BRANCH: 
+    ACTIVATE: True
     NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
     PRETRAINED_MODEL: /media/david/datos/Violence DATA/VioNet_weights/pytorch_i3d/rgb_imagenet.pt
@@ -29,15 +31,17 @@ MODEL:
     WITH_SPATIAL_POOL: False
     TYPE: RoIAlign
   _2D_BRANCH:
+    ACTIVATE: True
     NAME: resnet50
     FINAL_ENDPOINT: layer4
     NUM_TRAINABLE_LAYERS: 4
     WITH_ROIPOOL: False
   _CFAM_BLOCK:
+    ACTIVATE: True
     IN_CHANNELS: 2576 #1552 #528+1024 #528+1024,#528+1024, #832+2048
     OUT_CHANNELS: 512
-  _FC:
-    INPUT_DIM: 32768 #8*8*512,#512#7105#145,#9280
+  # _FC:
+  #   INPUT_DIM: 32768 #8*8*512,#512#7105#145,#9280
   
 
 DATA:

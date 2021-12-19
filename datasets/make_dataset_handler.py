@@ -1,7 +1,9 @@
 from utils.global_var import *
+from utils.dataset_utils import read_JSON_ann
 from datasets.make_dataset import MakeRWF2000, MakeHockeyDataset, MakeRLVDDataset
 from datasets.make_UCFCrime import MakeUCFCrime
 from datasets.make_UCFCrime2Local import MakeUCFCrime2LocalClips
+from datasets.make_cctvfights import make_CCTVFights_dataset, make_CCTVFights_dataset_clips
 
 def load_make_dataset(cfg,
                       env_datasets_root,
@@ -68,6 +70,13 @@ def load_make_dataset(cfg,
             action_tubes_path=os.path.join(home_path, at_path, 'UCFCrime_Reduced'),
             train=train,
             ground_truth_tubes=load_gt)
+    elif dataset_name == CCTVFight_DATASET and train:
+        root = os.path.join(home_path, "CCTVFights/frames/fights")
+        json_file = os.path.join(home_path, "CCTVFights/groundtruth_modified.json")
+        pers_annotations_folder = os.path.join(home_path, "PersonDetections/CCTVFights/fights")
+        make_dataset = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, "training")
+    elif dataset_name == CCTVFight_DATASET and not train:
+        make_dataset = None
     else:
         print('Invalid DATASET name!!!')
         exit()

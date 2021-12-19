@@ -38,7 +38,7 @@ class RoiPoolLayer(nn.Module):
 
         if self.with_spatial_pool:
             x = self.spatial_pool(x) #torch.Size([16, 528, 1, 1, 1]
-            # print('after spatial_pool: ', x.size())
+            # print('after spatial_pool: ', x.size())   
             x = x.view(x.size(0),-1)
         return x
 
@@ -75,13 +75,16 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                                         aligned=True
                                         )
 
-        in_channels = self.cfg._CFAM_BLOCK.IN_CHANNELS #config['CFAMBlock_in_channels']
-        out_channels = self.cfg._CFAM_BLOCK.OUT_CHANNELS #config['CFAMBlock_out_channels']                       
-        self.CFAMBlock = CFAMBlock(in_channels, out_channels)
+        in_channels = self.cfg._CFAM_BLOCK.IN_CHANNELS
+        out_channels = self.cfg._CFAM_BLOCK.OUT_CHANNELS if self.cfg._2D_BRANCH.ACTIVATE else self.cfg._HEAD.INPUT_DIM
+        
+        if self.cfg._CFAM_BLOCK.ACTIVATE:
+            self.CFAMBlock = CFAMBlock(in_channels, out_channels)
+
         self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
-        if self.cfg._HEAD == 'binary':
+        if self.cfg._HEAD.NAME == 'binary':
             self.classifier = nn.Conv2d(out_channels, 2, kernel_size=1, bias=False)
-        elif self.cfg._HEAD == 'regression':
+        elif self.cfg._HEAD.NAME == 'regression':
             self.classifier = nn.Conv2d(out_channels, 1, kernel_size=1, bias=False)
     
     def weight_init(self):
@@ -100,9 +103,32 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         elif self.cfg._3D_BRANCH.NAME == '3dresnet':
             backbone = Backbone3DResNet()
         return backbone
+    
+    def forward_3d_branch(self, x1, bbox=None, num_tubes=0):
+        batch, c, t, h, w = x1.size()
+        x_3d = self._3d_stream(x1)
+        # print('output_3dbackbone: ', x_3d.size())
+        if self.cfg._3D_BRANCH.WITH_ROIPOOL:
+            batch = int(batch/num_tubes)
+            x_3d = self.roi_pool_3d(x_3d,bbox)#torch.Size([8, 528])
+            x_3d = torch.squeeze(x_3d, dim=2)
+            # print('3d after roipool: ', x_3d.size())
+            b_1, c_1, w_1, h_1 = x_3d.size()
 
+            if self.cfg._HEAD.NAME == 'binary':
+                x_3d = x_3d.view(batch, num_tubes, c_1, w_1, h_1)
+                x_3d = x_3d.max(dim=1).values
+                # print('after tmp max pool: ', x_3d.size())
+                x_3d = self.classifier(x_3d)
+                # print('after classifier conv: ', x_3d.size())
+                x_3d = self.avg_pool_2d(x_3d)
+                # print('after avg2D: ', x_3d.size())
+                x_3d = torch.squeeze(x_3d)
+        return x_3d
         
     def forward(self, x1, x2, bbox=None, num_tubes=0):
+        if not self.cfg._2D_BRANCH.ACTIVATE:
+            return self.forward_3d_branch(x1, bbox, num_tubes)
         batch, c, t, h, w = x1.size()
         x_3d = self._3d_stream(x1) #torch.Size([2, 528, 4, 14, 14])
         x_2d = self._2d_stream(x2) #torch.Size([2, 1024, 14, 14])
@@ -133,7 +159,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             b_1, c_1, w_1, h_1 = x.size()
 
-            if self.cfg._HEAD == 'binary':
+            if self.cfg._HEAD.NAME == 'binary':
                 x = x.view(batch, num_tubes, c_1, w_1, h_1)
                 x = x.max(dim=1).values
                 # print('after tmp max pool: ', x.size())
@@ -142,7 +168,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 x = self.avg_pool_2d(x)
                 # print('after avg2D: ', x.size())
                 x = torch.squeeze(x)
-            elif self.cfg._HEAD == 'regression':
+            elif self.cfg._HEAD.NAME == 'regression':
                 x = self.classifier(x)
                 # print('after classifier conv: ', x.size())
                 x = self.avg_pool_2d(x)

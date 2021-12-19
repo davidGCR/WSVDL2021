@@ -15,9 +15,9 @@ MOTION_SEGMENTATION_CONFIG = {
 }
 
 TUBE_BUILD_CONFIG = {
-    'train_mode': True,
+    'train_mode': False, #Change
     'img_size': (224,224),
-    'dataset_root': '',
+    'dataset_root': "/Users/davidchoqueluqueroman/Documents/DATASETS_Local/CCTVFights/frames", #Change
     'person_detections': '',
     'close_persons_rep': 10,#
     'temporal_window': 5,
