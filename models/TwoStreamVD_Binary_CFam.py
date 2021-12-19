@@ -159,7 +159,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             b_1, c_1, w_1, h_1 = x.size()
 
-            if self.cfg._HEAD == 'binary':
+            if self.cfg._HEAD.NAME == 'binary':
                 x = x.view(batch, num_tubes, c_1, w_1, h_1)
                 x = x.max(dim=1).values
                 # print('after tmp max pool: ', x.size())
@@ -168,7 +168,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 x = self.avg_pool_2d(x)
                 # print('after avg2D: ', x.size())
                 x = torch.squeeze(x)
-            elif self.cfg._HEAD == 'regression':
+            elif self.cfg._HEAD.NAME == 'regression':
                 x = self.classifier(x)
                 # print('after classifier conv: ', x.size())
                 x = self.avg_pool_2d(x)

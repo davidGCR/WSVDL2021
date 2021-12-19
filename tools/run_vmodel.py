@@ -22,16 +22,27 @@ from pathlib import Path
 def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
-    cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
-    print(cfg)
+    # print(cfg)
 
     # from debug_model import debug_model
     # debug_model(cfg.MODEL)
+    # exit()
+
+    # from debug_dataset import test_cctvfights_datasets
+    # from datasets.dataloaders import data_with_tubes_for_CCTVFights
+    # transforms_config_train, transforms_config_val = data_with_tubes_for_CCTVFights(cfg, None, None)
+    # test_cctvfights_datasets(cfg.TUBE_DATASET, transforms_config_train, transforms_config_val)
+    # exit()
+
+    # from debug_tubegen import test_tubegen_CCTVFights_dataset
+    # test_tubegen_CCTVFights_dataset()
     # exit()
 
     device = get_torch_device()

@@ -12,17 +12,17 @@ import json
 import torch
 import torch.utils.data as data
 from torch.utils.data import dataset
-from torch.utils.data.sampler import WeightedRandomSampler
 import torchvision.transforms as transforms
 
-from datasets.tube_crop import TubeCrop
+# from datasets.tube_crop import TubeCrop
 
 from transformations.dynamic_image_transformation import DynamicImage
-from transformations.temporal_transforms import CenterCrop, RandomCrop
+# from transformations.temporal_transforms import CenterCrop, RandomCrop
 
 from utils.global_var import *
 from utils.utils import natural_sort
 from utils.dataset_utils import imread, filter_data_without_tubelet, JSON_2_tube, check_no_tubes
+from datasets.create_tube_sampler import get_sampler
 
 class TubeDataset(data.Dataset):
     def __init__(self, cfg, make_fn, inputs_config, dataset, train_set):
@@ -44,51 +44,33 @@ class TubeDataset(data.Dataset):
         self.train_set = train_set
         if self.dataset == 'UCFCrime':
             self.paths, self.labels, _, self.annotations, self.num_frames = self.make_function()
-            # indices_2_remove = []
-            # for index in range(len(self.paths)):
-            #     annotation = self.annotations[index]
-            #     if len(annotation) == 0:
-            #         indices_2_remove.append(index)
-            # self.paths = [self.paths[i] for i in range(len(self.paths)) if i not in indices_2_remove]
-            # self.labels = [self.labels[i] for i in range(len(self.labels)) if i not in indices_2_remove]
-            # self.annotations = [self.annotations[i] for i in range(len(self.annotations)) if i not in indices_2_remove]
         elif self.dataset == UCFCrimeReduced_DATASET:
             self.paths, self.labels, self.annotations, self.num_frames = self.make_function()
         else:
             self.paths, self.labels, self.annotations = self.make_function()
             self.paths, self.labels, self.annotations = filter_data_without_tubelet(self.paths, self.labels, self.annotations)
 
-
         print('paths: {}, labels:{}, annot:{}'.format(len(self.paths), len(self.labels), len(self.annotations)))
-        if self.cfg.USE_TUBES:
-            self.sampler = TubeCrop(tube_len=cfg.NUM_FRAMES,
-                                    central_frame=True,
-                                    max_num_tubes=cfg.NUM_TUBES,
-                                    input_type=self.config['input_1'].itype,
-                                    sample_strategy=cfg.FRAMES_STRATEGY,
-                                    random=cfg.RANDOM,
-                                    box_as_tensor=False)
-        else:
-            if self.train_set:
-                self.sampler = RandomCrop(size=self.cfg.NUM_FRAMES,
-                                          stride=1,
-                                          input_type='rgb')
-            else:
-                self.sampler = CenterCrop(size=self.cfg.NUM_FRAMES,
-                                          stride=1,
-                                          input_type='rgb')
+        self.sampler = get_sampler(self.cfg, self.train_set)
+        # if self.cfg.USE_TUBES:
+        #     self.sampler = TubeCrop(tube_len=cfg.NUM_FRAMES,
+        #                             central_frame=True,
+        #                             max_num_tubes=cfg.NUM_TUBES,
+        #                             # input_type=self.config['input_1'].itype,
+        #                             sample_strategy=cfg.FRAMES_STRATEGY,
+        #                             random=cfg.RANDOM,
+        #                             box_as_tensor=False)
+        # else:
+        #     if self.train_set:
+        #         self.sampler = RandomCrop(size=self.cfg.NUM_FRAMES,
+        #                                   stride=1,
+        #                                   input_type='rgb')
+        #     else:
+        #         self.sampler = CenterCrop(size=self.cfg.NUM_FRAMES,
+        #                                   stride=1,
+        #                                   input_type='rgb')
         if self.config['input_2'].itype == DYN_IMAGE:
             self.dynamic_image_fn = DynamicImage()
-                
-    def get_sampler(self):
-        class_sample_count = np.unique(self.labels, return_counts=True)[1]
-        weight = 1./class_sample_count
-        print('class_sample_count: ', class_sample_count)
-        print('weight: ', weight)
-        samples_weight = weight[self.labels]
-        samples_weight = torch.from_numpy(samples_weight)
-        sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-        return sampler
     
     def build_frame_name(self, path, frame_number, frames_names_list):
         if self.dataset == RWF_DATASET:
@@ -216,38 +198,7 @@ class TubeDataset(data.Dataset):
                 # print('Applied transforms: ', t_combination)
        
         return tube_images_t, tube_boxes_t, tube_boxes, tube_boxes_raw_size, raw_clip_images, t_combination
-    
-    def load_input_2_di(self, frames_indices, path, frames_names_list):
-        frames_paths = [self.build_frame_name(path, i, frames_names_list) for i in frames_indices] #rwf
-        print('frames to build DI')
-        for j, fp in enumerate(frames_paths):
-            print(j, ' ', fp)
-        shot_images = [np.array(imread(img_path, resize=self.shape)) for img_path in frames_paths]
-        key_frame = self.dynamic_image_fn(shot_images)
-            
-        raw_key_frame = key_frame.copy()
-        if self.config['input_2'].spatial_transform:
-            key_frame = self.config['input_2'].spatial_transform(key_frame)
-        return key_frame, raw_key_frame
 
-    def load_tube_images(self, path, seg):
-        tube_images = [] #one tube-16 frames
-        if self.input_type=='rgb':
-            frames = [self.build_frame_name(path, i) for i in seg]
-            for i in frames:
-                img = imread(i)
-                tube_images.append(img)
-        else:
-            tt = DynamicImage()
-            for shot in seg:
-                if self.dataset == 'rwf-2000':
-                    frames = [os.path.join(path,'frame{}.jpg'.format(i+1)) for i in shot] #rwf
-                elif self.dataset == 'hockey':
-                    frames = [os.path.join(path,'frame{:03}.jpg'.format(i+1)) for i in shot]
-                shot_images = [imread(img_path) for img_path in frames]
-                img = self.spatial_transform(tt(shot_images)) if self.spatial_transform else tt(shot_images)
-                tube_images.append(img)
-        return tube_images
 
     def load_tube_from_file(self, annotation):
         if self.dataset == 'UCFCrime':
@@ -259,20 +210,6 @@ class TubeDataset(data.Dataset):
                 video_tubes = JSON_2_tube(annotation)
             assert len(video_tubes) >= 1, "No tubes in video!!!==>{}".format(annotation)
             return video_tubes
-    
-    def video_max_len(self, idx):
-        path = self.paths[idx]
-        if self.dataset == 'RealLifeViolenceDataset':
-            max_video_len = len(os.listdir(path)) - 1
-        elif self.dataset=='hockey':
-            max_video_len = 39
-        elif self.dataset=='rwf-2000':
-            max_video_len = 149
-        elif self.dataset == 'UCFCrime':
-            max_video_len = self.annotations[idx][0]['foundAt'][-1]- 1
-        elif self.dataset == 'UCFCrime_Reduced':
-            max_video_len = len(os.listdir(path)) - 1
-        return max_video_len
 
     def __len__(self):
         return len(self.paths)
