@@ -53,11 +53,11 @@ DATALOADER:
 TUBE_DATASET:
   USE_TUBES: True
   NUM_FRAMES: 16
-  NUM_TUBES: 3
+  NUM_TUBES: 2
   RANDOM: True
   FRAMES_STRATEGY: 0
   BOX_STRATEGY: 1 #0:middle, 1: union, 2: all
-  KEYFRAME_STRATEGY: 0 #0: rgb middle frame , 3:dynamic_images
+  KEYFRAME_STRATEGY: 3 #0: rgb middle frame , 3:dynamic_images
   KEYFRAME_CROP: False
   SHAPE: [224,224]
   MAKE_FN: None
