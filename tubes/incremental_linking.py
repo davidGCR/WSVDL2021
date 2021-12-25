@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import re
 import pandas as pd
+import traceback
 from utils.visual_utils import draw_boxes, imread, color
 from utils.tube_utils import bbox_iou_numpy, merge_bboxes, merge_bboxes_numpy, create_video
 
@@ -209,6 +210,7 @@ class IncrementalLinking:
             except Exception as e:
                 print("\nOops! Read segment exception: ", e.__class__, "occurred.\n", e)
                 print("segment: ", segment, " index: ", f)
+                traceback.print_exc()
             img_path = os.path.join(self.dataset_root, split, video, frame)
             assert os.path.isfile(img_path), print('File: {} does not exist!!!'.format({img_path}))
             img_paths.append(img_path)
@@ -526,18 +528,29 @@ class IncrementalLinking:
                 foundAt = live_paths[i]['foundAt']
                 framesNames = live_paths[i]['frames_name']
 
-                start_idx = real_indices.index(foundAt[0])
+                if not foundAt.count(foundAt[0])>1:
+                    start_idx = real_indices.index(foundAt[0])
+                else:
+                    num_occur = real_indices.count(foundAt[0])
+                    num_occur_tube = foundAt.count(foundAt[0])
+                    first_occ_idx = real_indices.index(foundAt[0])
+                    start_idx = first_occ_idx + (num_occur - num_occur_tube)
                 
                 if not real_indices.count(foundAt[-1])>1:
                     end_idx = real_indices.index(foundAt[-1])
                 else:
-                    #Get index of last element with repetitions
-                    # example: real_indices = [2, 2, 3, 3, 4, 5, 5, 6]
-                    d1 = {item:real_indices.count(item) for item in real_indices} #count repeat = {2: 2, 3: 2, 4: 1, 5: 2, 6: 1}
-                    elems = list(filter(lambda x: d1[x] > 1, d1)) #repeated elements = [2, 3, 5]
-                    d2 = dict(zip(range(0, len(real_indices)), real_indices)) #indice of each element ={0: 2, 1: 2, 2: 3, 3: 3, 4: 4, 5: 5, 6: 5, 7: 6}
-                    res = {item: list(filter(lambda x: d2[x] == item, d2)) for item in elems} #{2: [0, 1], 3: [2, 3], 5: [5, 6]}
-                    end_idx = res[foundAt[-1]][-1]
+                    try:
+                        #Get index of last element with repetitions
+                        # example: real_indices = [2, 2, 3, 3, 4, 5, 5, 6]
+                        d1 = {item:real_indices.count(item) for item in real_indices} #count repeat = {2: 2, 3: 2, 4: 1, 5: 2, 6: 1}
+                        elems = list(filter(lambda x: d1[x] > 1, d1)) #repeated elements = [2, 3, 5]
+                        d2 = dict(zip(range(0, len(real_indices)), real_indices)) #indice of each element ={0: 2, 1: 2, 2: 3, 3: 3, 4: 4, 5: 5, 6: 5, 7: 6}
+                        res = {item: list(filter(lambda x: d2[x] == item, d2)) for item in elems} #{2: [0, 1], 3: [2, 3], 5: [5, 6]}
+                        end_idx = res[foundAt[-1]][-1]
+                    except Exception as e:
+                        print("Error getting end_idx. ", e)
+                        traceback.print_exc()
+
                 # real_segment = real_indices[start_idx:end_idx+1]
                 real_segment_indices = list(range(start_idx,end_idx+1))
                 missed_indices = []
@@ -571,7 +584,7 @@ class IncrementalLinking:
                 live_paths[i]['boxes'] = new_boxes  
                 live_paths[i]['len'] += len(missed_frames)
                 
-                assert new_founAt == real_indices[start_idx:end_idx+1], 'Filling lp error: \noriginal_tube: {} \nnew_founAt: {} is different to: \n real_indices[start_idx:end_idx+1]:{}'.format(original_tube, new_founAt,real_indices[start_idx:end_idx+1])
+                assert new_founAt == real_indices[start_idx:end_idx+1], 'Filling lp error: \noriginal_tube: {} \nnew_founAt: {} is different to: \nreal_indices: {} \n real_indices[start_idx:end_idx+1]:{}'.format(original_tube, new_founAt, real_indices, real_indices[start_idx:end_idx+1])
                 # print('\tlive_path filled: {}:\n{}'.format(i+1, live_paths[i]))
                 # print('path: {}, foundAt: {}, real_segment: {}, missed_indices: {}, indices_to_insert: {} = {}'.format(i+1, foundAt, real_segment, missed_indices, indices_to_insert, new_founAt))
 

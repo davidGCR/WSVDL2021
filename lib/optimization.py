@@ -34,7 +34,7 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
         #predict
         outs = _model(video_images, key_frames, boxes, _num_tubes)
         #loss
-        # print('labels: ', labels, labels.size(),  outs, outs.size())
+        print('labels: ', labels, labels.size(),  outs, outs.size())
         loss = _criterion(outs, labels)
         #accuracy
         acc = _accuracy_fn(outs, labels)

@@ -1,8 +1,9 @@
 from utils.dataset_utils import read_JSON_ann
 import os
+import numpy as np
 
 class make_CCTVFights_dataset_clips():
-    def __init__(self, root, json_file, pers_annotations_folder, subset='training'):
+    def __init__(self, root, json_file, pers_annotations_folder, min_clip_len, subset='training'):
         """Load clip paths considering each positive and negative instance as an individual sample
 
         Args:
@@ -17,6 +18,17 @@ class make_CCTVFights_dataset_clips():
         self.root = root
         self.pers_annotations_folder = pers_annotations_folder
         self.subset = subset
+        self.min_clip_len = min_clip_len
+    
+    def getClip(self, tmp_annotation):
+        frame_rate = tmp_annotation["frame_rate"]
+        clip_start = round(tmp_annotation["segment"][0]*frame_rate)
+        clip_start = 1 if clip_start == 0 else clip_start
+        clip_end = round(tmp_annotation["segment"][1]*frame_rate)
+        
+        # clip = list(range(clip_start, clip_end+1, 1))
+        clip = np.arange(clip_start, clip_end+1).tolist()
+        return clip
     
     def __call__(self):
         paths = []
@@ -24,27 +36,32 @@ class make_CCTVFights_dataset_clips():
         indices = []
         tmp_annotations = []
         pers_annotations = []
+        clips = []
         for i, key in enumerate(self.data["database"]):
             if self.data["database"][key]["subset"] == self.subset:
                 for j in range(len(self.data["database"][key]["annotations"])):
-                    paths.append(os.path.join(self.root, key))
-                    labels.append(1)
-                    indices.append(j)
-
                     temp_annot = self.data["database"][key]["annotations"][j]
                     temp_annot["frame_rate"] = self.data["database"][key]["frame_rate"]
-                    tmp_annotations.append(temp_annot)
-                    pers_annotations.append(os.path.join(self.pers_annotations_folder, key+'.json'))
+                    clip = self.getClip(temp_annot)
+                    if len(clip)>=self.min_clip_len:
+                        paths.append(os.path.join(self.root, key))
+                        labels.append(1)
+                        indices.append(j)
+                        tmp_annotations.append(temp_annot)
+                        pers_annotations.append(os.path.join(self.pers_annotations_folder, key+'.json'))
+                        clips.append(clip)
                 for k in range(len(self.data["database"][key]["n_annotations"])):
-                    paths.append(os.path.join(self.root, key))
-                    labels.append(0)
-                    indices.append(k)
-
                     temp_annot = self.data["database"][key]["n_annotations"][k]
                     temp_annot["frame_rate"] = self.data["database"][key]["frame_rate"]
-                    tmp_annotations.append(temp_annot)
-                    pers_annotations.append(os.path.join(self.pers_annotations_folder, key+'.json'))
-        return paths, labels, indices, tmp_annotations, pers_annotations
+                    clip = self.getClip(temp_annot)
+                    if len(clip)>=len(clip):
+                        paths.append(os.path.join(self.root, key))
+                        labels.append(0)
+                        indices.append(k)
+                        tmp_annotations.append(temp_annot)
+                        pers_annotations.append(os.path.join(self.pers_annotations_folder, key+'.json'))
+                        clips.append(clip)
+        return paths, labels, indices, tmp_annotations, pers_annotations, clips
 
 class make_CCTVFights_dataset():
     def __init__(self, root, root_person_detec, json_file, subset='testing'):

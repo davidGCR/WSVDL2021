@@ -74,7 +74,7 @@ def load_make_dataset(cfg,
         root = os.path.join(home_path, "CCTVFights/frames/fights")
         json_file = os.path.join(home_path, "CCTVFights/groundtruth_modified.json")
         pers_annotations_folder = os.path.join(home_path, "PersonDetections/CCTVFights/fights")
-        make_dataset = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, "training")
+        make_dataset = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, 32, "training")
     elif dataset_name == CCTVFight_DATASET and not train:
         make_dataset = None
     else:

@@ -6,6 +6,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 
 import numpy as np
+import traceback
 
 from utils.dataset_utils import read_JSON_ann, imread
 from utils.utils import natural_sort
@@ -47,7 +48,7 @@ class ClipDataset(data.Dataset):
         self.train_set = train_set
         self.seq_len = seq_len
         self.stride = stride
-        self.paths, self.labels, indices, self.tmp_annotations, self.pers_annotations = make_fn()
+        self.paths, self.labels, indices, self.tmp_annotations, self.pers_annotations, self.clips = make_fn()
         self.random = random
         self.transforms = transforms
         self.sampler = get_sampler(self.cfg, self.train_set)
@@ -82,7 +83,14 @@ class ClipDataset(data.Dataset):
     def load_clip(self, video_path, sampled_clip):
         frames_names = natural_sort([f for f in os.listdir(video_path) if '.jpg' in f])
         # clip_frames = [frames_names[i-1] for i in range(len(frames_names)) if i in sampled_clip]
-        clip_frames = [frames_names[i-1] for i in sampled_clip]
+        try:
+            clip_frames = [frames_names[i-1] for i in sampled_clip]
+        except Exception as e:
+            print("Error reading clip. ", e)
+            print('\nvideo:', video_path)
+            print('\nsampled_clip:', sampled_clip)
+            traceback.print_exc()
+
         return clip_frames
     
     def load_3D_input(self, path, frames_indices, sampled_tube):
@@ -215,20 +223,19 @@ class ClipDataset(data.Dataset):
         label = self.labels[index]
         tmp_annotation = self.tmp_annotations[index]
         pers_annotation = self.pers_annotations[index]
-        frame_rate = tmp_annotation["frame_rate"]
-        clip_start = round(tmp_annotation["segment"][0]*frame_rate)
-        clip_start = 1 if clip_start == 0 else clip_start
-        clip_end = round(tmp_annotation["segment"][1]*frame_rate)
-        
-        # clip = list(range(clip_start, clip_end+1, 1))
-        clip = np.arange(clip_start, clip_end+1).tolist()
+        # frame_rate = tmp_annotation["frame_rate"]
+        # clip_start = round(tmp_annotation["segment"][0]*frame_rate)
+        # clip_start = 1 if clip_start == 0 else clip_start
+        # clip_end = round(tmp_annotation["segment"][1]*frame_rate)
+        # clip = np.arange(clip_start, clip_end+1).tolist()
+        clip = self.clips[index]
         sampled_clip = []
         if len(clip) > self.seq_len:
             sampled_clip, s, e = self.sampling(clip.copy())
-        elif len(clip)<self.seq_len:
-            sampled_clip = np.linspace(clip_start, clip_end, self.seq_len).astype(int).tolist()
-            s = clip_start
-            e = clip_end
+        # elif len(clip)<self.seq_len:
+        #     sampled_clip = np.linspace(clip_start, clip_end, self.seq_len).astype(int).tolist()
+        #     s = clip_start
+        #     e = clip_end
         clip_frames = self.load_clip(path, sampled_clip) #['frame__001.jpg, ..., frame__016.jpg']
         # print("\nINSTANCE [s:{},e:{}]: {}/{} \nSAMPLED_CLIP: {}/[s,e]={}, \nCLIP_FRAMES before tube extraction: {}".format(clip_start, clip_end, clip, len(clip), sampled_clip, (s,e), clip_frames))
         try:
@@ -236,7 +243,8 @@ class ClipDataset(data.Dataset):
             tubes = self.extract_tubes(pers_annotation, sampled_clip_indices, clip_frames)
         except Exception as e:
             print("\nOops! Extract tube exception: ", e.__class__, "occurred.\n", e)
-            print("Extract tube parameters \npers_annot: {}\nsampled_clip_indices: {}\nclip_frames: {}".format(pers_annotation, sampled_clip_indices, clip_frames))
+            print("Extract tube parameters \npers_annot: {}\nsampled_clip_indices: {}\nclip_frames: {}\nlabel: {}".format(pers_annotation, sampled_clip_indices, clip_frames, label))
+            traceback.print_exc()
             # exit()
         # print("\ntubes: ", len(tubes))
         sampled_frames_indices, chosed_tubes = self.sampler(tubes)
@@ -250,7 +258,11 @@ class ClipDataset(data.Dataset):
             tube_images_t, tube_boxes_t = self.load_3D_input(path, frames_indices, sampled_tube)
             video_images.append(torch.stack(tube_images_t, dim=0))
             #get one box per tube
-            tube_box = self.get_tube_box(tube_boxes_t)
+            try:
+                tube_box = self.get_tube_box(tube_boxes_t)
+            except Exception as e:
+                print("Error extracting tube box. ", e)
+                traceback.print_exc()
             video_boxes.append(tube_box)
         keyframes = self.load_2D_input(video_images, video_boxes)
         video_images = torch.stack(video_images, dim=0).permute(0,4,1,2,3)
