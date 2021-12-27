@@ -10,6 +10,7 @@ class make_CCTVFights_dataset_clips():
             root (str): Path of the dataset folder.
             json_file (str): Annotations ground truth path.
             subset (str, optional): Subset to load. Defaults to 'training'.
+            min_clip_len (int): filter clips with min number of frames.
 
         Returns:
             (list, list, list, list, list) : Lists of paths, labels, indices, tmp_annotations = [{'segment': [142.2, 230.68], 'label': 'NonFight', 'frame_rate': 25.0}, ...], pers_annotation
@@ -54,7 +55,7 @@ class make_CCTVFights_dataset_clips():
                     temp_annot = self.data["database"][key]["n_annotations"][k]
                     temp_annot["frame_rate"] = self.data["database"][key]["frame_rate"]
                     clip = self.getClip(temp_annot)
-                    if len(clip)>=len(clip):
+                    if len(clip)>=self.min_clip_len:
                         paths.append(os.path.join(self.root, key))
                         labels.append(0)
                         indices.append(k)

@@ -1,4 +1,5 @@
-from PIL import Image
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 color = {'green':(0,255,0),
         'blue':(255,165,0),

@@ -52,7 +52,10 @@ class DynamicImage():
         sm = frames*fwr
         sm = sm.sum(0)
         sm = sm - np.min(sm)
-        sm = 255 * sm / np.max(sm)
+
+        sm = sm.astype(np.float64)
+
+        sm = 255 * sm / (np.max(sm)+0.00001)
         img = sm.astype(np.uint8)
         ##to PIL image
         imgPIL = Image.fromarray(np.uint8(img))

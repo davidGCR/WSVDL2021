@@ -47,13 +47,16 @@ def main(h_path):
 
     device = get_torch_device()
     if cfg.MODEL._HEAD.NAME == BINARY:
+        min_clip_len = cfg.TUBE_DATASET.STRIDE*cfg.TUBE_DATASET.SEQ_LEN if cfg.DATA.DATASET == CCTVFight_DATASET else 0
         make_dataset_train = load_make_dataset(cfg.DATA,
                                         env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
+                                        min_clip_len=min_clip_len,
                                         train=True,
                                         category=2,
                                         shuffle=False)
         make_dataset_val = load_make_dataset(cfg.DATA,
                                         env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
+                                        min_clip_len=min_clip_len,
                                         train=False,
                                         category=2,
                                         shuffle=False)                           
@@ -189,6 +192,6 @@ def main(h_path):
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_OSX
+    h_path = HOME_UBUNTU
     torch.autograd.set_detect_anomaly(True)
     main(h_path)

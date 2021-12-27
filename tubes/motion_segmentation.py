@@ -1,4 +1,5 @@
 
+import traceback
 import transformations.temporal_transforms as ts
 import transformations.dynamic_image_transformation as tt
 import random as rng
@@ -196,7 +197,7 @@ class MotionSegmentation:
     def normalize(self, data):
         data = (data / 255.0).astype(np.float32)
         mean = np.mean(data)
-        std = np.std(data)
+        std = np.std(data)+0.0001
         return (data-mean) / std
     
     def compute_mean_image(self, images, normalize=True):
@@ -322,7 +323,11 @@ class MotionSegmentation:
         # Now convert back into uint8, and make original image
         center = np.uint8(center)
 
-        res = center[label.flatten()]
+        try:
+            res = center[label.flatten()]
+        except Exception as e:
+            print('Error in color_quantization: {}\nimage: {}\nimage Z: {}\ncenter: {}, label:{}'.format(e, image.shape,Z.shape, center.shape, label.shape))
+            traceback.print_exc()
         res2 = res.reshape((image.shape))
         return res2, center
 

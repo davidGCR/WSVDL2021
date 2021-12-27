@@ -7,6 +7,7 @@ from datasets.make_cctvfights import make_CCTVFights_dataset, make_CCTVFights_da
 
 def load_make_dataset(cfg,
                       env_datasets_root,
+                      min_clip_len=0,
                       train=True,
                       category=2, 
                       shuffle=False):
@@ -15,6 +16,7 @@ def load_make_dataset(cfg,
     Args:
         cfg (yaml): cfg.DATA
         env_datasets_root (str): Path to datasets folder    
+        min_clip_len (int, optional): Filter videos with min number of frames. Use for CCTVFights dataset. Defaults to 0.
         train (bool, optional): [description]. Defaults to True.
         category (int, optional): [description]. Defaults to 2.
         shuffle (bool, optional): [description]. Defaults to False.
@@ -74,7 +76,7 @@ def load_make_dataset(cfg,
         root = os.path.join(home_path, "CCTVFights/frames/fights")
         json_file = os.path.join(home_path, "CCTVFights/groundtruth_modified.json")
         pers_annotations_folder = os.path.join(home_path, "PersonDetections/CCTVFights/fights")
-        make_dataset = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, 32, "training")
+        make_dataset = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, min_clip_len, "training")
     elif dataset_name == CCTVFight_DATASET and not train:
         make_dataset = None
     else:

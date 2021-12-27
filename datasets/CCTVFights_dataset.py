@@ -80,15 +80,15 @@ class ClipDataset(data.Dataset):
         tubes, time = extract_tubes_from_video(sequence, sequence_video_names, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG, None)
         return tubes
     
-    def load_clip(self, video_path, sampled_clip):
+    def load_clip(self, video_path, sampled_clip, clip):
         frames_names = natural_sort([f for f in os.listdir(video_path) if '.jpg' in f])
         # clip_frames = [frames_names[i-1] for i in range(len(frames_names)) if i in sampled_clip]
         try:
             clip_frames = [frames_names[i-1] for i in sampled_clip]
         except Exception as e:
-            print("Error reading clip. ", e)
-            print('\nvideo:', video_path)
-            print('\nsampled_clip:', sampled_clip)
+            print("Error reading clip. {}\nvideo: {}\nclip: {}\nsampled_clip: {}".format(e, video_path, clip, sampled_clip))
+            # print('\nvideo:', video_path)
+            # print('\nsampled_clip:', sampled_clip)
             traceback.print_exc()
 
         return clip_frames
@@ -232,18 +232,20 @@ class ClipDataset(data.Dataset):
         sampled_clip = []
         if len(clip) > self.seq_len:
             sampled_clip, s, e = self.sampling(clip.copy())
+        elif len(clip) == self.seq_len:
+            sampled_clip = clip
         # elif len(clip)<self.seq_len:
         #     sampled_clip = np.linspace(clip_start, clip_end, self.seq_len).astype(int).tolist()
         #     s = clip_start
         #     e = clip_end
-        clip_frames = self.load_clip(path, sampled_clip) #['frame__001.jpg, ..., frame__016.jpg']
+        clip_frames = self.load_clip(path, sampled_clip, clip) #['frame__001.jpg, ..., frame__016.jpg']
         # print("\nINSTANCE [s:{},e:{}]: {}/{} \nSAMPLED_CLIP: {}/[s,e]={}, \nCLIP_FRAMES before tube extraction: {}".format(clip_start, clip_end, clip, len(clip), sampled_clip, (s,e), clip_frames))
         try:
             sampled_clip_indices = [i-1 for i in sampled_clip]
             tubes = self.extract_tubes(pers_annotation, sampled_clip_indices, clip_frames)
         except Exception as e:
             print("\nOops! Extract tube exception: ", e.__class__, "occurred.\n", e)
-            print("Extract tube parameters \npers_annot: {}\nsampled_clip_indices: {}\nclip_frames: {}\nlabel: {}".format(pers_annotation, sampled_clip_indices, clip_frames, label))
+            print("Extract tube parameters \npers_annot: {}\nclip: {}\nsampled clip: {}\nsampled_clip_indices: {}\nclip_frames: {}\nlabel: {}".format(pers_annotation, clip, sampled_clip, sampled_clip_indices, clip_frames, label))
             traceback.print_exc()
             # exit()
         # print("\ntubes: ", len(tubes))

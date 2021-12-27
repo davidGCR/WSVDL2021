@@ -17,13 +17,13 @@ MOTION_SEGMENTATION_CONFIG = {
 TUBE_BUILD_CONFIG = {
     'train_mode': False, #Change
     'img_size': (224,224),
-    'dataset_root': "/Users/davidchoqueluqueroman/Documents/DATASETS_Local/CCTVFights/frames", #Change
+    'dataset_root': "/media/david/datos/Violence DATA/CCTVFights/frames",#"/Users/davidchoqueluqueroman/Documents/DATASETS_Local/CCTVFights/frames", #Change
     'person_detections': '',
     'close_persons_rep': 10,#
-    'temporal_window': 5,
+    'temporal_window': 8, #5
     'min_iou_close_persons': 0.3,
     'jumpgap': 5,
-    'min_window_len': 3,
+    'min_window_len': 5,#3,
     'plot_config':{
         'debug_mode': False,
         'plot_tubes': False,
