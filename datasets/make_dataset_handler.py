@@ -3,7 +3,7 @@ from utils.dataset_utils import read_JSON_ann
 from datasets.make_dataset import MakeRWF2000, MakeHockeyDataset, MakeRLVDDataset
 from datasets.make_UCFCrime import MakeUCFCrime
 from datasets.make_UCFCrime2Local import MakeUCFCrime2LocalClips
-from datasets.make_cctvfights import make_CCTVFights_dataset, make_CCTVFights_dataset_clips
+from datasets.make_cctvfights import make_CCTVFights_dataset_val, make_CCTVFights_dataset_clips
 
 def load_make_dataset(cfg,
                       env_datasets_root,

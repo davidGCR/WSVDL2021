@@ -64,7 +64,7 @@ class make_CCTVFights_dataset_clips():
                         clips.append(clip)
         return paths, labels, indices, tmp_annotations, pers_annotations, clips
 
-class make_CCTVFights_dataset():
+class make_CCTVFights_dataset_val():
     def __init__(self, root, root_person_detec, json_file, subset='testing'):
         """Load clip paths considering long videos.
 

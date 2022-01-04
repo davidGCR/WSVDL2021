@@ -274,7 +274,19 @@ class ClipDataset(data.Dataset):
         return video_boxes, video_images, label, path, keyframes
 
 class SequentialDataset(data.Dataset):
+    """Load a long video sequentially
+
+    Args:
+        seq_len (int): [description]
+        video_path (str): [description]
+        tubes_path (str): [description]
+        annotations (str): [description]
+        pers_detect_annot (str): [description]
+        frame_rate (int): [description]
+        transform (torch transform): [description]
+    """
     def __init__(self, seq_len, video_path, tubes_path, annotations, pers_detect_annot, frame_rate, transform):
+        
         self.seq_len = seq_len
         self.tubes_path = tubes_path
         self.video_path = video_path
@@ -305,7 +317,7 @@ class SequentialDataset(data.Dataset):
         tube_path = os.path.join(self.tubes_path, "{}_from_{}_to_{}.json".format(video_name, sequence[0]+1, sequence[-1]+1))
         # print('tube_path: ', tube_path)
         if not os.path.isfile(tube_path):
-            print('Extracting tubes at: ', tube_path)
+            print('Extracting/saving tubes at: ', tube_path)
             person_detections = JSON_2_videoDetections(self.pers_detect_annot)
             TUBE_BUILD_CONFIG['person_detections'] = person_detections
             tubes, time = extract_tubes_from_video(sequence, sequence_video_names, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG, None)

@@ -41,9 +41,9 @@ def main(h_path):
     # test_cctvfights_datasets(cfg.TUBE_DATASET, transforms_config_train, transforms_config_val)
     # exit()
 
-    # from debug_tubegen import test_tubegen_CCTVFights_dataset
-    # test_tubegen_CCTVFights_dataset()
-    # exit()
+    from debug_tubegen import test_tubegen_CCTVFights_dataset
+    test_tubegen_CCTVFights_dataset()
+    exit()
 
     device = get_torch_device()
     if cfg.MODEL._HEAD.NAME == BINARY:
