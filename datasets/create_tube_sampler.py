@@ -2,6 +2,15 @@ from datasets.tube_crop import TubeCrop
 from transformations.temporal_transforms import CenterCrop, RandomCrop
 
 def get_sampler(cfg, train_set):
+    """Load sampler: TubeCrop, RandomCrop, CenterCrop
+
+    Args:
+        cfg (yaml): cfg.TUBE_DATASET
+        train_set (bool): Flac to use RanmdomCrop in train set and CenterCrop in val set.
+
+    Returns:
+        sampler: Function to sample frames.
+    """
     if cfg.USE_TUBES:
         sampler = TubeCrop(tube_len=cfg.NUM_FRAMES,
                                 central_frame=True,

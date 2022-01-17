@@ -10,6 +10,7 @@ import os
 import operator
 from utils.visual_utils import color, imread
 # from tube_config import *
+from sklearn.cluster import KMeans
 
 class MotionSegmentation:
     def __init__(self, 
@@ -326,10 +327,22 @@ class MotionSegmentation:
         try:
             res = center[label.flatten()]
         except Exception as e:
+            cv2.imwrite('/media/david/datos/Violence DATA/failTubeImages/im1.jpg', image)
             print('Error in color_quantization: {}\nimage: {}\nimage Z: {}\ncenter: {}, label:{}'.format(e, image.shape,Z.shape, center.shape, label.shape))
             traceback.print_exc()
         res2 = res.reshape((image.shape))
         return res2, center
+    
+    def color_quantization_sklearn(self, image, K):
+        w,h, c = image.shape
+        Z = image.reshape((-1,3))
+        # convert to np.float32
+        Z = np.float32(Z)
+        kmeans = KMeans(n_clusters=K, random_state=0).fit(Z)
+        labels = kmeans.predict(Z)
+        centers = kmeans.cluster_centers_
+        
+        
 
     def get_k_better_components(self, components, centers, k):
         max_component_idx = []

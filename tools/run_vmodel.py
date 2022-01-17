@@ -41,10 +41,6 @@ def main(h_path):
     # test_cctvfights_datasets(cfg.TUBE_DATASET, transforms_config_train, transforms_config_val)
     # exit()
 
-    from debug_tubegen import test_tubegen_CCTVFights_dataset
-    test_tubegen_CCTVFights_dataset()
-    exit()
-
     device = get_torch_device()
     if cfg.MODEL._HEAD.NAME == BINARY:
         min_clip_len = cfg.TUBE_DATASET.STRIDE*cfg.TUBE_DATASET.SEQ_LEN if cfg.DATA.DATASET == CCTVFight_DATASET else 0
@@ -60,8 +56,11 @@ def main(h_path):
                                         train=False,
                                         category=2,
                                         shuffle=False)                           
-        train_loader, val_loader, train_dataset, val_dataset = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
+        train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
 
+        from debug_tubegen import test_tubegen_CCTVFights_dataset
+        test_tubegen_CCTVFights_dataset(cfg.TUBE_DATASET, transforms_val)
+        exit()
         # from debug_dataset import test_tube_dataset
         # test_tube_dataset(train_dataset, val_dataset)
         # exit()

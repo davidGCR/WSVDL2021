@@ -81,6 +81,16 @@ class ClipDataset(data.Dataset):
         return tubes
     
     def load_clip(self, video_path, sampled_clip, clip):
+        """Get a list of frame paths.
+
+        Args:
+            video_path (str): Path of the video (folder of frames)
+            sampled_clip (list): List of indices corresponding to the clip
+            clip (list): Long clip in the video
+
+        Returns:
+            list: Paths of the clip
+        """
         frames_names = natural_sort([f for f in os.listdir(video_path) if '.jpg' in f])
         # clip_frames = [frames_names[i-1] for i in range(len(frames_names)) if i in sampled_clip]
         try:
@@ -273,10 +283,146 @@ class ClipDataset(data.Dataset):
         # return path, label, tmp_annotation, pers_annotation, clip, sampled_clip, video_images, video_boxes, keyframes
         return video_boxes, video_images, label, path, keyframes
 
+def load3DInput(path, frames_indices, sampled_tube, spatial_transform):
+    """Load into memory images anb boxes from a given tube
+
+    Args:
+        path (str): Path of the video where the images are stored.
+        frames_indices (list): List of integers corresponding to indices of frames to be loaded.
+        sampled_tube (dict): Tube in dictionary format.
+        spatial_transform (transform): Spatial transformation
+
+    Returns:
+        (list, list): tube_images_t, tube_boxes_t
+    """
+    frames_names_list = natural_sort(os.listdir(path))
+    tube_images = []
+    tube_boxes = []
+    frames_paths = [os.path.join(path,frames_names_list[i]) for i in frames_indices]
+    # for j, fp in enumerate(frames_paths):
+    #     print(j, ' ', fp)
+    for i in frames_paths:
+        img = imread(i)
+        tube_images.append(img)
+        _, frame_name = os.path.split(i)
+        try:
+            box_idx = sampled_tube['frames_name'].index(frame_name)
+        except Exception as e:
+            print("\nOops! not box_id in tube, ", e.__class__)
+            print("\nno filled: {} \nsampled_tube['frames_name']: {} \n frame: {} \n sampled_indices: {} \npath: {}".format(sampled_tube['without_fill_gap'], sampled_tube['frames_name'], frame_name, frames_indices, path))
+            exit()
+        tube_boxes.append(box_idx)
+    
+    tube_boxes_raw_size = [sampled_tube['boxes'][b] for b in tube_boxes]
+    tube_boxes = [np.array(t[0:4]).reshape(1,-1).astype(float) for t in tube_boxes_raw_size]
+    tube_boxes = [np.where(t<0, 0, t).reshape(1,-1).astype(float) for t in tube_boxes]
+    
+    # print('\ntube_boxes: ', tube_boxes)
+    if spatial_transform:
+        #TODO change the negative coordinates to 0 after the transformation
+        tube_images_t, tube_boxes_t, t_combination = spatial_transform(tube_images, tube_boxes.copy())
+        return tube_images_t, tube_boxes_t
+
+def load2DInput(video_images, 
+                  video_boxes, 
+                  dynamic_image_fn, 
+                  keyframe_str,
+                  spatial_transform,
+                  shape,
+                  keyframe_crop):
+    """Process the 3D input to get the 2D branch input. Process k inputs, where k is the number of tubes per video.
+
+    Args:
+        video_images (list): List of k tensors of shape [t,h,w,3] where t is the number of frames per tube.
+        video_boxes (list): List of k tensors of shape [1,5]
+        dynamic_image_fn (function): Function to build dynamic image
+        keyframe_str (str): Keyframe sampling strategy
+        spatial_transform (transformation): Spatial transformation
+        shape (array, tuple): Shape to resize input
+        keyframe_crop (bool): Flac to indicate if input would be crop
+
+    Returns:
+        list: List of k tensors of shape [3,224,224].
+    """
+    key_frames = []
+    for k in range(len(video_images)):
+        if keyframe_str == DYNAMIC_IMAGE_KEYFRAME:
+            key_frame = dynamic_image_fn(video_images[k])
+            # key_frames_raw.append(key_frame)
+            if keyframe_str:
+                rect = video_boxes[k][1:5]
+                key_frame = key_frame.crop((rect[0].item(),rect[1].item(),rect[2].item(),rect[3].item()))
+                key_frame = key_frame.resize((shape[0], shape[1]))
+            # key_frames_raw.append(key_frame)
+            if spatial_transform:
+                key_frame = spatial_transform(key_frame)
+            # key_frames_raw.append(transforms.ToPILImage()(key_frame))
+        elif keyframe_str == RGB_MIDDLE_KEYFRAME:
+            m = int(video_images[k].size(0)/2) #using frames loaded from 3d branch
+            key_frame = video_images[k][m] #tensor torch.Size([224, 224, 3])
+            #TODO multiply per 255????
+            key_frame_pil = transforms.ToPILImage()(key_frame.permute(2,0,1)) #(224, 224)
+            # key_frames_raw.append(key_frame_pil)
+            if keyframe_crop:
+                rect = video_boxes[k][1:5]
+                key_frame = key_frame_pil.crop((rect[0].item(),rect[1].item(),rect[2].item(),rect[3].item()))
+                key_frame = key_frame.resize((shape[0], shape[1]))
+            else:
+                key_frame = key_frame_pil
+            
+            if spatial_transform:
+                key_frame = spatial_transform(key_frame) #torch.Size([3, 224, 224])
+                # print('key_frame transformed: ', key_frame.size())
+            # key_frames_raw.append(transforms.ToPILImage()(key_frame))
+        else:
+            #TODO
+            print('Keyframe option not implemented yet...')
+            exit()
+        key_frames.append(key_frame)
+    return key_frames
+
+def getTubeBox(tube_boxes_t, box_strategy):
+    """Extract one box from all boxes in a tube.
+
+    Args:
+        tube_boxes_t (list): List of transformed bboxes
+        box_strategy (str): Type of sample for bbox
+
+    Raises:
+        Exception: Error in tube box if there is an error.
+
+    Returns:
+        tensor: box from tube.
+    """
+    if box_strategy == MIDDLE_BOX:
+        m = int(len(tube_boxes_t)/2) #middle box from tube
+        ##setting id to box
+        tube_box = tube_boxes_t[m]
+        id_tensor = torch.tensor([0]).unsqueeze(dim=0).float()
+        if tube_box.size(0)==0:
+            raise Exception("Error in tube box: {}/{}".format(tube_boxes_t, len(tube_boxes_t)))
+        f_box = torch.cat([id_tensor , tube_box], dim=1).float()
+    elif box_strategy == UNION_BOX:
+        all_boxes = [t for i, t in enumerate(tube_boxes_t)]
+        all_boxes = torch.stack(all_boxes, dim=0).squeeze()
+        mins, _ = torch.min(all_boxes, dim=0)
+        x1 = mins[0].unsqueeze(dim=0).float()
+        y1 = mins[1].unsqueeze(dim=0).float()
+        maxs, _ = torch.max(all_boxes, dim=0)
+        x2 = maxs[2].unsqueeze(dim=0).float()
+        y2 = maxs[3].unsqueeze(dim=0).float()
+        id_tensor = torch.tensor([0]).float()
+        f_box = torch.cat([id_tensor , x1, y1, x2, y2]).float()
+    elif box_strategy == ALL_BOX:
+        f_box = [torch.cat([torch.tensor([i]).unsqueeze(dim=0), torch.from_numpy(t)], dim=1).float() for i, t in enumerate(tube_boxes)]
+        f_box = torch.stack(f_box, dim=0)
+    return f_box
+        
 class SequentialDataset(data.Dataset):
     """Load a long video sequentially
 
     Args:
+        cfg (yaml): [description]
         seq_len (int): [description]
         video_path (str): [description]
         tubes_path (str): [description]
@@ -285,8 +431,16 @@ class SequentialDataset(data.Dataset):
         frame_rate (int): [description]
         transform (torch transform): [description]
     """
-    def __init__(self, seq_len, video_path, tubes_path, annotations, pers_detect_annot, frame_rate, transform):
-        
+    def __init__(self, 
+                 cfg,
+                 seq_len, 
+                 video_path, 
+                 tubes_path, 
+                 annotations, 
+                 pers_detect_annot, 
+                 frame_rate, 
+                 transforms):
+        self.cfg = cfg
         self.seq_len = seq_len
         self.tubes_path = tubes_path
         self.video_path = video_path
@@ -299,7 +453,10 @@ class SequentialDataset(data.Dataset):
         self.sequences = [indices[x:x+self.seq_len] for x in range(0, len(self.frames), self.seq_len)]
         
         self.max_overlap = round(0.5*self.seq_len)
-        self.transform = transform
+        self.transforms = transforms
+        self.sampler = get_sampler(self.cfg, False)
+        if self.transforms['input_2'].itype == DYN_IMAGE:
+            self.dynamic_image_fn = DynamicImage()
 
     def seq2frames(self, sequence):
         frames = [self.frames[idx] for idx in sequence]
@@ -360,16 +517,61 @@ class SequentialDataset(data.Dataset):
         frames_names = self.seq2frames(sequence)
         # print('sequence {}/{}/names: {}'.format(index, sequence, len(frames_names)))
 
+        
         tubes = self.load_tubes(sequence, frames_names)
         # print('sequence tubes: ', len(tubes))
-
         video_images = []
-        for fn in frames_names:
-            img = imread(os.path.join(self.video_path, fn))
-            video_images.append(self.transform(img))
-        video_images = torch.stack(video_images, dim=0)
+        video_boxes = []
+        if len(tubes)>0:
+            sampled_frames_indices, chosed_tubes = self.sampler(tubes)
+            # print("\nsampled_frames_indices:", sampled_frames_indices)
+            # print("\nchosed_tubes:", chosed_tubes)
+            for frames_indices, sampled_tube in zip(sampled_frames_indices, chosed_tubes):
+                tube_images_t, tube_boxes_t = load3DInput(self.video_path, 
+                                                          frames_indices, 
+                                                          sampled_tube,
+                                                          self.transforms['input_1'].spatial_transform)
+                video_images.append(torch.stack(tube_images_t, dim=0))
+                #get one box per tube
+                try:
+                    tube_box = getTubeBox(tube_boxes_t, self.cfg.BOX_STRATEGY)
+                except Exception as e:
+                    print("Error extracting tube box. ", e)
+                    traceback.print_exc()
+                video_boxes.append(tube_box)
+                print('tube_box: ', tube_box, tube_box.size())
+            keyframes = load2DInput(video_images, 
+                                    video_boxes, 
+                                    self.dynamic_image_fn, 
+                                    self.cfg.KEYFRAME_STRATEGY, 
+                                    self.transforms['input_2'].spatial_transform,
+                                    self.cfg.SHAPE, 
+                                    self.cfg.KEYFRAME_CROP)
+        else:
+            # transform = transforms.ToTensor()
+            transform = transforms.Compose([
+                # transforms.Resize(224),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+            ])
+            tube_images_t = []
+            for fn in frames_names:
+                img = imread(os.path.join(self.video_path, fn))
+                tube_images_t.append(transform(img))
+            tube_images_t = tube_images_t[0:16]
+            keyframes = [tube_images_t[0].clone()]
+            keyframes = self.cfg.NUM_TUBES*keyframes
+            tube_images_t = torch.stack(tube_images_t, dim=0).permute(0,2,3,1)
+            video_images = self.cfg.NUM_TUBES*[tube_images_t]
+            video_boxes = self.cfg.NUM_TUBES*[torch.tensor([0, 10, 10, 40, 40])]
+            
+            
+        video_images = torch.stack(video_images, dim=0).permute(0,4,1,2,3)
+        keyframes = torch.stack(keyframes, dim=0)
+        video_boxes = torch.stack(video_boxes, dim=0).squeeze()
+        # print('video_images from dataset: ', video_images.size())
         # return sequence, frames_names, video_images, label, annotation
-        return video_images, label, tubes
+        return video_boxes, video_images, label, tubes, keyframes
 
 
 import json

@@ -9,7 +9,7 @@ from utils.tube_utils import JSON_2_videoDetections
 from pathlib import Path
 
 
-def test_tubegen_CCTVFights_dataset():
+def test_tubegen_CCTVFights_dataset(cfg, transforms):
     """Test Sequential Dataset to load long videos clip by clip. 
         Extract action tubes from each sequence and save as json
     """
@@ -26,26 +26,30 @@ def test_tubegen_CCTVFights_dataset():
                                                                                         root_person_detec, 
                                                                                         json_file,
                                                                                         "testing")()
-    transform = transforms.ToTensor()
+    # transform = transforms.ToTensor()
 
     for j, (path, frame_rate, tmp_annot, pers_detect_annot) in enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)):
         print(j, path)
         print("tmp_annot: ", tmp_annot)
         print("pers_detect_annot: ", pers_detect_annot)
         print("frame_rate: ", frame_rate)
-        dataset = SequentialDataset(seq_len=32, 
+        dataset = SequentialDataset(cfg=cfg,
+                                    seq_len=32, 
                                     tubes_path=tubes_path, 
                                     pers_detect_annot=pers_detect_annot, 
                                     annotations=tmp_annot, 
                                     video_path=path, 
                                     frame_rate=frame_rate, 
-                                    transform=transform)
+                                    transforms=transforms)
 
         loader = DataLoader(dataset,
                         batch_size=1,
                         shuffle=False,
                         num_workers=1,
                         )
-        for video_images, label, tubes in loader:
+        for video_boxes, video_images, label, tubes, keyframes in loader:
             # frames_names = [list(i) for i in zip(*frames_names)]
-            print('\tprocessing clip: VIDEO_IMGS: {}, TUBES: {}'.format(video_images.size(), len(tubes)))
+            print('\tprocessing clip: VIDEO_IMGS: {}, KEYFRAMES: {}, BOXES: {}, TUBES: {}'.format(video_images.size(),
+                                                                                    keyframes.size(), 
+                                                                                    video_boxes.size(),
+                                                                                    len(tubes)))

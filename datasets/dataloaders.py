@@ -104,7 +104,7 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
                             collate_fn=my_collate,
                             drop_last=cfg.DATALOADER.DROP_LAST
                             )
-    return train_loader, val_loader, train_dataset, val_dataset
+    return train_loader, val_loader, train_dataset, val_dataset, transforms_config_train, transforms_config_val
 
 def dataloaders_for_CCTVFights(cfg, make_dataset_train, make_dataset_val):
     """Build dataloaders for train and val sets specifically for CCTVFights dataset.
