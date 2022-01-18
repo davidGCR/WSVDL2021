@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from utils.dataset_utils import read_JSON_ann
 from datasets.CCTVFights_dataset import *
 from datasets.make_cctvfights import  make_CCTVFights_dataset_val
+from datasets.collate_fn import my_collate
 from tubes.run_tube_gen import *
 from configs.tube_config import TUBE_BUILD_CONFIG, MOTION_SEGMENTATION_CONFIG
 from utils.tube_utils import JSON_2_videoDetections
@@ -46,10 +47,12 @@ def test_tubegen_CCTVFights_dataset(cfg, transforms):
                         batch_size=1,
                         shuffle=False,
                         num_workers=1,
+                        collate_fn=my_collate
                         )
-        for video_boxes, video_images, label, tubes, keyframes in loader:
+        # for video_boxes, video_images, label, tubes, keyframes in loader:
+        for video_boxes, video_images, label, path, keyframes in loader:
             # frames_names = [list(i) for i in zip(*frames_names)]
-            print('\tprocessing clip: VIDEO_IMGS: {}, KEYFRAMES: {}, BOXES: {}, TUBES: {}'.format(video_images.size(),
+            print('\tprocessing clip: VIDEO_IMGS: {}, KEYFRAMES: {}, BOXES: {}, LABEL: {}'.format(video_images.size(),
                                                                                     keyframes.size(), 
                                                                                     video_boxes.size(),
-                                                                                    len(tubes)))
+                                                                                    label))

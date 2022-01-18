@@ -78,7 +78,11 @@ def load_make_dataset(cfg,
         pers_annotations_folder = os.path.join(home_path, "PersonDetections/CCTVFights/fights")
         make_dataset = make_CCTVFights_dataset_clips(root, json_file, pers_annotations_folder, min_clip_len, "training")
     elif dataset_name == CCTVFight_DATASET and not train:
-        make_dataset = None
+        root = Path(home_path)
+        dataset_root = root / "CCTVFights/frames/fights"
+        root_person_detec = root / "PersonDetections/CCTVFights"
+        json_file = root / "CCTVFights/groundtruth_modified.json"
+        make_dataset = make_CCTVFights_dataset_val(dataset_root, root_person_detec, json_file, "testing")
     else:
         print('Invalid DATASET name!!!')
         exit()

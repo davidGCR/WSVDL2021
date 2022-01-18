@@ -422,9 +422,9 @@ class SequentialDataset(data.Dataset):
     """Load a long video sequentially
 
     Args:
-        cfg (yaml): [description]
-        seq_len (int): [description]
-        video_path (str): [description]
+        cfg (yaml): cfg.TUBE_DATASET
+        seq_len (int): Temporal window length, clip length.
+        video_path (str): Path to the folder with frames
         tubes_path (str): [description]
         annotations (str): [description]
         pers_detect_annot (str): [description]
@@ -539,7 +539,7 @@ class SequentialDataset(data.Dataset):
                     print("Error extracting tube box. ", e)
                     traceback.print_exc()
                 video_boxes.append(tube_box)
-                print('tube_box: ', tube_box, tube_box.size())
+                # print('tube_box: ', tube_box, tube_box.size())
             keyframes = load2DInput(video_images, 
                                     video_boxes, 
                                     self.dynamic_image_fn, 
@@ -571,7 +571,9 @@ class SequentialDataset(data.Dataset):
         video_boxes = torch.stack(video_boxes, dim=0).squeeze()
         # print('video_images from dataset: ', video_images.size())
         # return sequence, frames_names, video_images, label, annotation
-        return video_boxes, video_images, label, tubes, keyframes
+        # return video_boxes, video_images, label, tubes, keyframes
+        path = ""
+        return video_boxes, video_images, label, path, keyframes
 
 
 import json

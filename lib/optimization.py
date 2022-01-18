@@ -88,6 +88,8 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
         key_frames = key_frames.to(_device)
+        
+        
 
         # video_images, labels, paths, key_frames, _ = data
         # video_images = video_images.to(_device)
@@ -104,6 +106,57 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
         accuracies.update(acc, outputs.shape[0])
     val_loss = losses.avg
     val_acc = accuracies.avg
+    print(
+        'Epoch: [{}]\t'
+        'Loss(val): {loss:.4f}\t'
+        'Acc(val): {acc:.3f}'.format(_epoch, loss=val_loss, acc=val_acc)
+    )
+    return val_loss, val_acc
+
+def val_map(_loader, _epoch, _model, _criterion, _device, _num_tubes):
+    print('validation at epoch: {}'.format(_epoch))
+    # set model to evaluate mode
+    _model.eval()
+    # meters
+    losses = AverageMeter()
+    # accuracies = AverageMeter()
+    # Initialize the prediction and label lists(tensors)
+    ypred = torch.zeros(0,dtype=torch.long, device='cpu')
+    ytrue = torch.zeros(0,dtype=torch.long, device='cpu')
+    
+    for _, data in enumerate(_loader):
+        boxes, video_images, labels, paths, key_frames = data
+        boxes, video_images = boxes.to(_device), video_images.to(_device)
+        labels = labels.to(_device)
+        key_frames = key_frames.to(_device)
+        
+        print('video_images: ', video_images.size())
+        print('key_frames: ', key_frames.size())
+        print('boxes: ', boxes,  boxes.size())
+        # print('labels: ', labels, labels.size())
+        
+        ytrue = torch.cat([ytrue, labels.view(-1).cpu()])
+
+        # video_images, labels, paths, key_frames, _ = data
+        # video_images = video_images.to(_device)
+        # labels = labels.to(_device)
+        # key_frames = key_frames.to(_device)
+        # boxes = None
+        # no need to track grad in eval mode
+        with torch.no_grad():
+            
+            outputs = _model(video_images, key_frames, boxes, _num_tubes)
+            print('outputs: ', outputs,  outputs.size())
+            print('labels: ', labels, labels.size())
+            
+            loss = _criterion(outputs, labels)
+
+        losses.update(loss.item(), outputs.shape[0])
+    
+    print('ytrue: ', ytrue)
+
+    val_loss = losses.avg
+    val_acc = 0
     print(
         'Epoch: [{}]\t'
         'Loss(val): {loss:.4f}\t'

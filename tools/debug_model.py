@@ -7,7 +7,7 @@ def debug_model(cfg):
     print('------- ViolenceDetector --------')
     
     # # model = ViolenceDetectorRegression(aggregate=True).to(device)
-    batch = 2
+    batch = 1
     tubes = 3
     input_1 = torch.rand(batch*tubes,3,8,224,224).to(device)
     input_2 = torch.rand(batch*tubes,3,224,224).to(device)
@@ -16,9 +16,9 @@ def debug_model(cfg):
     rois[0] = torch.tensor([0,  62.5481,  49.0223, 122.0747, 203.4146]).to(device)#torch.tensor([1, 14, 16, 66, 70]).to(device)
     rois[1] = torch.tensor([1, 34, 14, 85, 77]).to(device)
     rois[2] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[3] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[4] = torch.tensor([1, 34, 14, 85, 77]).to(device)
-    rois[5] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    # rois[3] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    # rois[4] = torch.tensor([1, 34, 14, 85, 77]).to(device)
+    # rois[5] = torch.tensor([1, 34, 14, 85, 77]).to(device)
     # rois[6] = torch.tensor([1, 34, 14, 85, 77]).to(device)
     # rois[7] = torch.tensor([1, 34, 14, 85, 77]).to(device)
 

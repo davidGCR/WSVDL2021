@@ -10,7 +10,7 @@ from utils.create_log_name import log_name
 from datasets.make_dataset_handler import load_make_dataset, load_make_dataset_UCFCrime2Local
 from datasets.dataloaders import data_with_tubes, data_with_tubes_localization
 
-from lib.optimization import train, val
+from lib.optimization import train, val, val_map
 from lib.optimization_mil import train_regressor, val_regressor
 from lib.accuracy import calculate_accuracy_2
 
@@ -31,9 +31,9 @@ def main(h_path):
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     # print(cfg)
 
-    # from debug_model import debug_model
-    # debug_model(cfg.MODEL)
-    # exit()
+    from debug_model import debug_model
+    debug_model(cfg.MODEL)
+    exit()
 
     # from debug_dataset import test_cctvfights_datasets
     # from datasets.dataloaders import data_with_tubes_for_CCTVFights
@@ -58,9 +58,10 @@ def main(h_path):
                                         shuffle=False)                           
         train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
 
-        from debug_tubegen import test_tubegen_CCTVFights_dataset
-        test_tubegen_CCTVFights_dataset(cfg.TUBE_DATASET, transforms_val)
-        exit()
+        # from debug_tubegen import test_tubegen_CCTVFights_dataset
+        # test_tubegen_CCTVFights_dataset(cfg.TUBE_DATASET, transforms_val)
+        # exit()
+        
         # from debug_dataset import test_tube_dataset
         # test_tube_dataset(train_dataset, val_dataset)
         # exit()
@@ -129,29 +130,76 @@ def main(h_path):
         verbose=True,
         factor=cfg.SOLVER.OPTIMIZER.FACTOR,
         min_lr=cfg.SOLVER.OPTIMIZER.MIN_LR)
+
+    
+    def validate_long_videos(cfg, make_fn, clip_len, tubes_path, transforms, **kwargs):
+        from datasets.CCTVFights_dataset import SequentialDataset
+        from torch.utils.data import DataLoader
+        from datasets.collate_fn import my_collate
+        
+        paths, frame_rates, tmp_annotations, person_det_files = make_fn()
+        for j, (path, frame_rate, tmp_annot, pers_detect_annot) in enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)):
+            print(j, path)
+            print("tmp_annot: ", tmp_annot)
+            print("pers_detect_annot: ", pers_detect_annot)
+            print("frame_rate: ", frame_rate)
+            dataset = SequentialDataset(cfg=cfg,
+                                        seq_len=clip_len, 
+                                        tubes_path=tubes_path, 
+                                        pers_detect_annot=pers_detect_annot, 
+                                        annotations=tmp_annot, 
+                                        video_path=path, 
+                                        frame_rate=frame_rate, 
+                                        transforms=transforms)
+
+            loader = DataLoader(dataset,
+                            batch_size=1,
+                            shuffle=False,
+                            num_workers=1,
+                            collate_fn=my_collate
+                            )
+            
+            val_loss, val_acc = val_map(loader,
+                                    kwargs["epoch"], 
+                                    kwargs["model"], 
+                                    kwargs["criterion"],
+                                    kwargs["device"],
+                                    kwargs["num_tubes"])
     
     for epoch in range(start_epoch, cfg.SOLVER.EPOCHS):
         if cfg.MODEL._HEAD.NAME == BINARY:
-            train_loss, train_acc, train_time = train(
-                train_loader, 
-                epoch, 
-                model, 
-                criterion, 
-                optimizer, 
-                device, 
-                cfg.TUBE_DATASET.NUM_TUBES, 
-                calculate_accuracy_2)
-            writer.add_scalar('training loss', train_loss, epoch)
-            writer.add_scalar('training accuracy', train_acc, epoch)
+            # train_loss, train_acc, train_time = train(
+            #     train_loader, 
+            #     epoch, 
+            #     model, 
+            #     criterion, 
+            #     optimizer, 
+            #     device, 
+            #     cfg.TUBE_DATASET.NUM_TUBES, 
+            #     calculate_accuracy_2)
+            # writer.add_scalar('training loss', train_loss, epoch)
+            # writer.add_scalar('training accuracy', train_acc, epoch)
             
-            val_loss, val_acc = val(
-                val_loader,
-                epoch, 
-                model, 
-                criterion,
-                device,
-                cfg.TUBE_DATASET.NUM_TUBES,
-                calculate_accuracy_2)
+            if not cfg.DATA.DATASET == CCTVFight_DATASET:
+                val_loss, val_acc = val(
+                    val_loader,
+                    epoch, 
+                    model, 
+                    criterion,
+                    device,
+                    cfg.TUBE_DATASET.NUM_TUBES,
+                    calculate_accuracy_2)
+            else:
+                validate_long_videos(cfg.TUBE_DATASET, 
+                                     make_dataset_val, 
+                                     32, 
+                                     os.path.join(cfg.ENVIRONMENT.DATASETS_ROOT, "ActionTubesV2/CCTVFights/test/fights"),
+                                     transforms_val,
+                                     epoch=epoch,
+                                     model=model,
+                                     criterion=criterion,
+                                     device=device,
+                                     num_tubes=cfg.TUBE_DATASET.NUM_TUBES)
             scheduler.step(val_loss)
             writer.add_scalar('validation loss', val_loss, epoch)
             writer.add_scalar('validation accuracy', val_acc, epoch)
