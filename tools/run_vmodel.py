@@ -31,9 +31,9 @@ def main(h_path):
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     # print(cfg)
 
-    from debug_model import debug_model
-    debug_model(cfg.MODEL)
-    exit()
+    # from debug_model import debug_model
+    # debug_model(cfg.MODEL)
+    # exit()
 
     # from debug_dataset import test_cctvfights_datasets
     # from datasets.dataloaders import data_with_tubes_for_CCTVFights

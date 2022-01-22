@@ -522,7 +522,8 @@ class SequentialDataset(data.Dataset):
         # print('sequence tubes: ', len(tubes))
         video_images = []
         video_boxes = []
-        if len(tubes)>0:
+        ntubes = len(tubes)
+        if ntubes>0:
             sampled_frames_indices, chosed_tubes = self.sampler(tubes)
             # print("\nsampled_frames_indices:", sampled_frames_indices)
             # print("\nchosed_tubes:", chosed_tubes)
@@ -572,8 +573,8 @@ class SequentialDataset(data.Dataset):
         # print('video_images from dataset: ', video_images.size())
         # return sequence, frames_names, video_images, label, annotation
         # return video_boxes, video_images, label, tubes, keyframes
-        path = ""
-        return video_boxes, video_images, label, path, keyframes
+        # path = ""
+        return video_boxes, video_images, label, ntubes, keyframes
 
 
 import json

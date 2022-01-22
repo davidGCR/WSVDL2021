@@ -16,7 +16,7 @@ def my_collate(batch):
     images = [item[1] for item in batch if item[1] is not None]
     labels = [item[2] for item in batch if item[2] is not None]
     # num_tubes = [item[3] for item in batch if item[3] is not None]
-    paths = [item[3] for item in batch if item[3]]
+    paths = [item[3] for item in batch if item[3] is not None]
     # if len(batch[0]) == 6:
     #     key_frames = [item[5] for item in batch if item[5] is not None]
 
