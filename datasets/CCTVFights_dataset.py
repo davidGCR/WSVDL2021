@@ -43,7 +43,7 @@ class ClipDataset(data.Dataset):
         transforms (dict): Dictionary with tranformations for the two branches.
         train_set (bool): Flac to indicate to the tube extractor to use the motion map when there is no frames into a clip.
     """
-    def __init__(self, cfg, seq_len, stride, make_fn, random, transforms, train_set):
+    def __init__(self, cfg, tube_folder, seq_len, stride, make_fn, random, transforms, train_set):
         self.cfg = cfg
         self.train_set = train_set
         self.seq_len = seq_len
@@ -51,6 +51,7 @@ class ClipDataset(data.Dataset):
         self.paths, self.labels, indices, self.tmp_annotations, self.pers_annotations, self.clips = make_fn()
         self.random = random
         self.transforms = transforms
+        self.tube_folder = tube_folder
         self.sampler = get_sampler(self.cfg, self.train_set)
         if self.transforms['input_2'].itype == DYN_IMAGE:
             self.dynamic_image_fn = DynamicImage()
@@ -72,12 +73,28 @@ class ClipDataset(data.Dataset):
         assert len(crop_r) == self.seq_len, print("Error sampling clip from instance \nclip: {}, \ncrop_r={}/{}, \nstart: {}".format(clip, crop_r, len(crop_r), start))
         return crop_r, start, crop_r[-1]
     
-    def extract_tubes(self, pers_annotation, sequence, sequence_video_names):
-        person_detections = JSON_2_videoDetections(pers_annotation)
-        TUBE_BUILD_CONFIG['person_detections'] = person_detections
-        if self.train_set:
-            TUBE_BUILD_CONFIG['train_mode'] = True
-        tubes, time = extract_tubes_from_video(sequence, sequence_video_names, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG, None)
+    def extract_tubes(self, 
+                      video_path, 
+                      pers_annotation, 
+                      sequence, 
+                      sequence_video_names,
+                      label):
+        # print('video_path: ', video_path)
+        video_name = video_path.split('/')[-1]
+        frame_s = sequence_video_names[0].split('_')[-1][0:-4]
+        frame_e = sequence_video_names[-1].split('_')[-1][0:-4]
+        
+        tube_path = os.path.join(self.tube_folder, "{}_from_{}_to_{}_{}.json".format(video_name, frame_s, frame_e, label))
+        # print('start_frame: {}, end_frame: {}/ tube_p:{}--label: {}'.format(sequence_video_names[0], sequence_video_names[-1], tube_path, label))
+        if not os.path.isfile(tube_path):
+            person_detections = JSON_2_videoDetections(pers_annotation)
+            TUBE_BUILD_CONFIG['person_detections'] = person_detections
+            if self.train_set:
+                TUBE_BUILD_CONFIG['train_mode'] = True
+            tubes, time = extract_tubes_from_video(sequence, sequence_video_names, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG, None)
+            tube_2_JSON(tube_path, tubes)
+        else:
+            tubes = JSON_2_tube(tube_path)
         return tubes
     
     def load_clip(self, video_path, sampled_clip, clip):
@@ -252,7 +269,7 @@ class ClipDataset(data.Dataset):
         # print("\nINSTANCE [s:{},e:{}]: {}/{} \nSAMPLED_CLIP: {}/[s,e]={}, \nCLIP_FRAMES before tube extraction: {}".format(clip_start, clip_end, clip, len(clip), sampled_clip, (s,e), clip_frames))
         try:
             sampled_clip_indices = [i-1 for i in sampled_clip]
-            tubes = self.extract_tubes(pers_annotation, sampled_clip_indices, clip_frames)
+            tubes = self.extract_tubes(path, pers_annotation, sampled_clip_indices, clip_frames, label)
         except Exception as e:
             print("\nOops! Extract tube exception: ", e.__class__, "occurred.\n", e)
             print("Extract tube parameters \npers_annot: {}\nclip: {}\nsampled clip: {}\nsampled_clip_indices: {}\nclip_frames: {}\nlabel: {}".format(pers_annotation, clip, sampled_clip, sampled_clip_indices, clip_frames, label))

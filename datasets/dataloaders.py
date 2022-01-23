@@ -65,12 +65,13 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
     if cfg.DATA.DATASET == 'CCTVFights':
         train_dataset = ClipDataset(
                             cfg=cfg.TUBE_DATASET,
+                            tube_folder=cfg.TUBE_DATASET.TUBE_FOLDER,
                             seq_len=cfg.TUBE_DATASET.SEQ_LEN, 
                             stride=cfg.TUBE_DATASET.STRIDE, 
                             make_fn=make_dataset_train, 
                             random=cfg.TUBE_DATASET.RANDOM_INSTANCE_CLIP, 
                             transforms=transforms_config_train,
-                            train_set=cfg.TUBE_DATASET.TUBE_TRAIN_SET
+                            train_set=True
                             )
         train_loader = DataLoader(train_dataset,
                             batch_size=cfg.DATALOADER.TRAIN_BATCH,

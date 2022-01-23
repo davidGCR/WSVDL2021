@@ -19,6 +19,12 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
 
+#validation log  videos
+from datasets.CCTVFights_dataset import SequentialDataset
+from torch.utils.data import DataLoader
+from datasets.collate_fn import my_collate
+from sklearn.metrics import average_precision_score
+
 def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
@@ -132,17 +138,18 @@ def main(h_path):
         min_lr=cfg.SOLVER.OPTIMIZER.MIN_LR)
 
     
-    def validate_long_videos(cfg, make_fn, clip_len, tubes_path, transforms, **kwargs):
-        from datasets.CCTVFights_dataset import SequentialDataset
-        from torch.utils.data import DataLoader
-        from datasets.collate_fn import my_collate
+    def validate_long_videos(cfg, make_fn, clip_len, tubes_path, transforms,_epoch , **kwargs):
+        print('validation at epoch: {}'.format(_epoch))
+        
         
         paths, frame_rates, tmp_annotations, person_det_files = make_fn()
+        ypred = torch.zeros(0,dtype=torch.long, device='cpu')
+        ytrue = torch.zeros(0,dtype=torch.long, device='cpu')
         for j, (path, frame_rate, tmp_annot, pers_detect_annot) in enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)):
             print(j, path)
-            print("tmp_annot: ", tmp_annot)
-            print("pers_detect_annot: ", pers_detect_annot)
-            print("frame_rate: ", frame_rate)
+            # print("tmp_annot: ", tmp_annot)
+            # print("pers_detect_annot: ", pers_detect_annot)
+            # print("frame_rate: ", frame_rate)
             dataset = SequentialDataset(cfg=cfg,
                                         seq_len=clip_len, 
                                         tubes_path=tubes_path, 
@@ -159,24 +166,36 @@ def main(h_path):
                             collate_fn=my_collate
                             )
             
-            val_loss, val_acc = val_map(loader,
-                                    kwargs["epoch"], 
-                                    kwargs["model"], 
-                                    kwargs["criterion"],
-                                    kwargs["device"],
-                                    kwargs["num_tubes"])
+            ytrue_video, ypred_video = val_map(loader,
+                                                kwargs["epoch"], 
+                                                kwargs["model"], 
+                                                kwargs["criterion"],
+                                                kwargs["device"],
+                                                kwargs["num_tubes"])
+            ytrue = torch.cat([ytrue, ytrue_video.view(-1).cpu()])
+            ypred = torch.cat([ypred, ypred_video.view(-1).cpu()])
+        # print('ytrue: ', ytrue.size())
+        # print('ypred: ', ypred.size())
+        # print('lens: ', ytrue.size(), ypred.size())
+        
+        map = average_precision_score(ytrue.cpu().numpy(), ypred.cpu().numpy())
+        print(
+            'Epoch: [{}]\t'
+            'map(val): {map:.4f}\t'.format(_epoch, map=map)
+        )
+        return map
     
     for epoch in range(start_epoch, cfg.SOLVER.EPOCHS):
         if cfg.MODEL._HEAD.NAME == BINARY:
-            # train_loss, train_acc, train_time = train(
-            #     train_loader, 
-            #     epoch, 
-            #     model, 
-            #     criterion, 
-            #     optimizer, 
-            #     device, 
-            #     cfg.TUBE_DATASET.NUM_TUBES, 
-            #     calculate_accuracy_2)
+            train_loss, train_acc, train_time = train(
+                train_loader, 
+                epoch, 
+                model, 
+                criterion, 
+                optimizer, 
+                device, 
+                cfg.TUBE_DATASET.NUM_TUBES, 
+                calculate_accuracy_2)
             # writer.add_scalar('training loss', train_loss, epoch)
             # writer.add_scalar('training accuracy', train_acc, epoch)
             
@@ -189,20 +208,23 @@ def main(h_path):
                     device,
                     cfg.TUBE_DATASET.NUM_TUBES,
                     calculate_accuracy_2)
+                scheduler.step(val_loss)
+                writer.add_scalar('validation loss', val_loss, epoch)
+                writer.add_scalar('validation accuracy', val_acc, epoch)
             else:
-                validate_long_videos(cfg.TUBE_DATASET, 
+                mAP = validate_long_videos(cfg.TUBE_DATASET, 
                                      make_dataset_val, 
                                      32, 
                                      os.path.join(cfg.ENVIRONMENT.DATASETS_ROOT, "ActionTubesV2/CCTVFights/test/fights"),
                                      transforms_val,
+                                     epoch,
                                      epoch=epoch,
                                      model=model,
                                      criterion=criterion,
                                      device=device,
                                      num_tubes=cfg.TUBE_DATASET.NUM_TUBES)
-            scheduler.step(val_loss)
-            writer.add_scalar('validation loss', val_loss, epoch)
-            writer.add_scalar('validation accuracy', val_acc, epoch)
+                scheduler.step(train_loss)
+                writer.add_scalar('mAP', mAP, epoch)
         elif cfg.MODEL._HEAD.NAME == REGRESSION:
             train_loss, train_acc = train_regressor(
                 train_loader, 

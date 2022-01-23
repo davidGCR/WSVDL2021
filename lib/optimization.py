@@ -3,6 +3,7 @@ from torch.utils.tensorboard.summary import video
 from utils.utils import AverageMeter, get_number_from_string
 import numpy as np
 import time
+from sklearn.metrics import average_precision_score
 
 def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
     print('training at epoch: {}'.format(_epoch))
@@ -114,7 +115,7 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     return val_loss, val_acc
 
 def val_map(_loader, _epoch, _model, _criterion, _device, _num_tubes):
-    print('validation at epoch: {}'.format(_epoch))
+    # print('validation at epoch: {}'.format(_epoch))
     # set model to evaluate mode
     _model.eval()
     # meters
@@ -130,11 +131,11 @@ def val_map(_loader, _epoch, _model, _criterion, _device, _num_tubes):
         labels = labels.to(_device)
         key_frames = key_frames.to(_device)
         
-        print('video_images: ', video_images.size())
-        print('key_frames: ', key_frames.size())
-        print('boxes: ', boxes,  boxes.size())
-        print('labels: ', labels, labels.size())
-        print('ntubes: ', ntubes, len(ntubes))
+        # print('video_images: ', video_images.size())
+        # print('key_frames: ', key_frames.size())
+        # print('boxes: ', boxes,  boxes.size())
+        # print('labels: ', labels, labels.size())
+        # print('ntubes: ', ntubes, len(ntubes))
         
         ytrue = torch.cat([ytrue, labels.view(-1).cpu()])
         if ntubes[0] == 0:
@@ -150,18 +151,22 @@ def val_map(_loader, _epoch, _model, _criterion, _device, _num_tubes):
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
             outputs = torch.unsqueeze(outputs, dim=0)
             _, preds = torch.max(outputs, 1)
-            print('outputs: ', outputs,  outputs.size())
-            print('labels: ', labels, labels.size())
-            print('preds: ', preds, preds.size())
+            # print('outputs: ', outputs,  outputs.size())
+            # print('labels: ', labels, labels.size())
+            # print('preds: ', preds, preds.size())
             ypred = torch.cat([ypred, preds.view(-1).cpu()])
             
             # loss = _criterion(outputs, labels)
 
         # losses.update(loss.item(), outputs.shape[0])
+    return ytrue, ypred
     
     print('ytrue: ', ytrue, ytrue.size())
     print('ypred: ', ypred, ypred.size())
     print('lens: ', ytrue.size(), ypred.size())
+    
+    map = average_precision_score(ytrue.cpu().numpy(), ypred.cpu().numpy())
+    print("MAP: ", map)
     exit()
 
     val_loss = losses.avg
