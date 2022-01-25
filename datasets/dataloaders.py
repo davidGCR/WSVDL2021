@@ -65,7 +65,7 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
     if cfg.DATA.DATASET == 'CCTVFights':
         train_dataset = ClipDataset(
                             cfg=cfg.TUBE_DATASET,
-                            tube_folder=cfg.TUBE_DATASET.TUBE_FOLDER,
+                            tube_folder=os.path.join(cfg.TUBE_DATASET.TUBE_FOLDER, 'train'),
                             seq_len=cfg.TUBE_DATASET.SEQ_LEN, 
                             stride=cfg.TUBE_DATASET.STRIDE, 
                             make_fn=make_dataset_train, 

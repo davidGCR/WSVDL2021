@@ -475,7 +475,8 @@ class IncrementalLinking:
             else:
                 live_paths = []
             if len(live_paths) == 0:
-                print('\tNo Motion maps in video ....generating random tube')
+                
+                # print('\tNo Motion maps in video ....generating random tube')
 
                 random_path = {
                     'frames_name': [],

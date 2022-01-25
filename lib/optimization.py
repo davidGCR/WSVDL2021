@@ -4,6 +4,7 @@ from utils.utils import AverageMeter, get_number_from_string
 import numpy as np
 import time
 from sklearn.metrics import average_precision_score
+from tqdm import tqdm
 
 def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
     print('training at epoch: {}'.format(_epoch))
@@ -12,7 +13,7 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
     accuracies = AverageMeter()
     batch_time = AverageMeter()
     end_time = time.time()
-    for i, data in enumerate(_loader):
+    for i, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
         boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
@@ -141,11 +142,6 @@ def val_map(_loader, _epoch, _model, _criterion, _device, _num_tubes):
         if ntubes[0] == 0:
             ypred = torch.cat([ypred, torch.tensor([0])])
             continue
-        # video_images, labels, paths, key_frames, _ = data
-        # video_images = video_images.to(_device)
-        # labels = labels.to(_device)
-        # key_frames = key_frames.to(_device)
-        # boxes = None
         # no need to track grad in eval mode
         with torch.no_grad():
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
@@ -155,10 +151,6 @@ def val_map(_loader, _epoch, _model, _criterion, _device, _num_tubes):
             # print('labels: ', labels, labels.size())
             # print('preds: ', preds, preds.size())
             ypred = torch.cat([ypred, preds.view(-1).cpu()])
-            
-            # loss = _criterion(outputs, labels)
-
-        # losses.update(loss.item(), outputs.shape[0])
     return ytrue, ypred
     
     print('ytrue: ', ytrue, ytrue.size())

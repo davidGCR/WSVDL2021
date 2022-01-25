@@ -25,6 +25,8 @@ from torch.utils.data import DataLoader
 from datasets.collate_fn import my_collate
 from sklearn.metrics import average_precision_score
 
+from tqdm import tqdm
+
 def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
@@ -145,8 +147,8 @@ def main(h_path):
         paths, frame_rates, tmp_annotations, person_det_files = make_fn()
         ypred = torch.zeros(0,dtype=torch.long, device='cpu')
         ytrue = torch.zeros(0,dtype=torch.long, device='cpu')
-        for j, (path, frame_rate, tmp_annot, pers_detect_annot) in enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)):
-            print(j, path)
+        for j, (path, frame_rate, tmp_annot, pers_detect_annot) in tqdm(enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)), total=len(paths), leave=False):
+            # print(j, path)
             # print("tmp_annot: ", tmp_annot)
             # print("pers_detect_annot: ", pers_detect_annot)
             # print("frame_rate: ", frame_rate)
@@ -162,7 +164,7 @@ def main(h_path):
             loader = DataLoader(dataset,
                             batch_size=1,
                             shuffle=False,
-                            num_workers=1,
+                            num_workers=4,
                             collate_fn=my_collate
                             )
             
@@ -196,8 +198,8 @@ def main(h_path):
                 device, 
                 cfg.TUBE_DATASET.NUM_TUBES, 
                 calculate_accuracy_2)
-            # writer.add_scalar('training loss', train_loss, epoch)
-            # writer.add_scalar('training accuracy', train_acc, epoch)
+            writer.add_scalar('training loss', train_loss, epoch)
+            writer.add_scalar('training accuracy', train_acc, epoch)
             
             if not cfg.DATA.DATASET == CCTVFight_DATASET:
                 val_loss, val_acc = val(

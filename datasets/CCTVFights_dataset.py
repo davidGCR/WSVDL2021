@@ -87,6 +87,7 @@ class ClipDataset(data.Dataset):
         tube_path = os.path.join(self.tube_folder, "{}_from_{}_to_{}_{}.json".format(video_name, frame_s, frame_e, label))
         # print('start_frame: {}, end_frame: {}/ tube_p:{}--label: {}'.format(sequence_video_names[0], sequence_video_names[-1], tube_path, label))
         if not os.path.isfile(tube_path):
+            # print("tube not found, extracting at: ", tube_path)
             person_detections = JSON_2_videoDetections(pers_annotation)
             TUBE_BUILD_CONFIG['person_detections'] = person_detections
             if self.train_set:
@@ -94,6 +95,7 @@ class ClipDataset(data.Dataset):
             tubes, time = extract_tubes_from_video(sequence, sequence_video_names, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG, None)
             tube_2_JSON(tube_path, tubes)
         else:
+            # print('reusing tube: ', tube_path)
             tubes = JSON_2_tube(tube_path)
         return tubes
     
