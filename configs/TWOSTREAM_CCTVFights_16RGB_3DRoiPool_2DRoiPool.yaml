@@ -13,8 +13,8 @@
 
 MODEL:
   NAME: TWO_STREAM_CFAM_CONFIG
-  RESTORE_TRAIN: False
-  CHECKPOINT_PATH: None
+  RESTORE_TRAIN: True
+  CHECKPOINT_PATH: /media/david/datos/Violence DATA/VioNet_pth/TWO_STREAM_CFAM_CONFIG-binary-3dRoi-True-2dRoi-True_CCTVFights_CV(1)_usingGT(False)_numTubes(3)_framesXtube(16)_framesStrat(0)_boxStrat(1)_keyframeInput(3)_loss(CEL)_opt(SGD)_lr(1e-05)_epochs(100)/save_at_epoch-27.chk
   _HEAD: 
     NAME: binary
   _3D_BRANCH: 
@@ -55,12 +55,12 @@ DATALOADER:
   DROP_LAST: True
 
 TUBE_DATASET:
-  TUBE_FOLDER: /media/david/datos/Violence DATA/ActionTubesV2/CCTVFights
+  TUBE_FOLDER: /media/david/datos/Violence DATA/ActionTubesV2/CCTVFights64frames #/media/david/datos/Violence DATA/ActionTubesV2/CCTVFights32frames
   USE_TUBES: True
   NUM_FRAMES: 16
   NUM_TUBES: 3
   RANDOM: True
-  SEQ_LEN: 32
+  SEQ_LEN: 64 #32
   STRIDE: 1
   RANDOM_INSTANCE_CLIP: False
   TUBE_TRAIN_SET: True
@@ -75,10 +75,10 @@ TUBE_DATASET:
 
 SOLVER:
   CRITERION: CEL
-  LR: 0.00001
+  LR: 0.001
   OPTIMIZER: 
     NAME: SGD
     FACTOR: 0.1
-    MIN_LR: 0.0000001
-  EPOCHS: 10
-  SAVE_EVERY: 1
+    MIN_LR: 0.00001
+  EPOCHS: 100
+  SAVE_EVERY: 100

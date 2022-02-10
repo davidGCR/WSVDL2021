@@ -164,7 +164,7 @@ def main(h_path):
             loader = DataLoader(dataset,
                             batch_size=1,
                             shuffle=False,
-                            num_workers=4,
+                            num_workers=0,
                             collate_fn=my_collate
                             )
             
@@ -217,7 +217,8 @@ def main(h_path):
                 mAP = validate_long_videos(cfg.TUBE_DATASET, 
                                      make_dataset_val, 
                                      32, 
-                                     os.path.join(cfg.ENVIRONMENT.DATASETS_ROOT, "ActionTubesV2/CCTVFights/test/fights"),
+                                    #  os.path.join(cfg.ENVIRONMENT.DATASETS_ROOT, "ActionTubesV2/CCTVFights/test/fights"),
+                                     os.path.join(cfg.TUBE_DATASET.TUBE_FOLDER, "test/fights"),
                                      transforms_val,
                                      epoch,
                                      epoch=epoch,
