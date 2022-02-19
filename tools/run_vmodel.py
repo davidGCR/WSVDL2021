@@ -33,8 +33,8 @@ def main(h_path):
     # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
-    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
-    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     # print(cfg)
@@ -264,6 +264,6 @@ def main(h_path):
             save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_UBUNTU
+    h_path = HOME_COLAB
     torch.autograd.set_detect_anomaly(True)
     main(h_path)
