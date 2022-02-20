@@ -36,24 +36,35 @@ pip install --upgrade --no-cache-dir gdown
 #Hockey Dataset
 echo "===> Preparing Hockey dataset..."
 gdown --id 1200VOpfMFUys_IrWWumI6qUP3-4-1U1G
-mv  "/content/drive/My Drive/VIOLENCE DATA/HockeyFightsDATASET.zip" "/content/DATASETS"
+filename="HockeyFightsDATASET.zip"
+src="/content/${filename}"
+dst="/content/DATASETS"
+mv $src ${dst}
+f_name="${dst}/${filename}"
+unzip -q $f_name -d $dst
+rm $f_name
 
 ##splits
-gdown --id 1Rkff63JA16GmN0nv4VZzGcCrkJlFm0kA
-# cp -r "/content/drive/My Drive/VIOLENCE DATA/VioNetDB-splits.zip" "/content/DATASETS"
-# !unzip -q /content/DATASETS/VioNetDB-splits.zip -d /content/DATASETS/
-# !rm /content/DATASETS/VioNetDB-splits.zip
+echo "===> Downloading splits..."
+gdown --id 106svvpxJDQV-eiFIbc3DUtqLrydXtQMm
+filename="VioNetDB-splits.zip"
+src="/content/${filename}"
+dst="/content/DATASETS"
+mv $src ${dst}
+f_name="${dst}/${filename}"
+unzip -q $f_name -d $dst
+rm $f_name
 
 #Action Tubes
-# echo "===> Downloading Hockey ActionTubes..."
-# filename="RWF-2000.zip"
-# gdown --id 13aVSz9j7XV4mqhcNAn0I7JNNteUYEV2A
-# src="/content/${filename}"
-# dst="/content/DATASETS/ActionTubesV2"
-# mv $src dst
-# f_name="${dst}/${filename}"
-# unzip -q $f_name}-d $dst
-# rm $f_name
+echo "===> Downloading Hockey ActionTubes..."
+filename="HockeyFightsDATASET.zip"
+gdown --id 1CiIzh99DeL_8JdkcUqIGUMjysCLJWNM8
+src="/content/${filename}"
+dst="/content/DATASETS/ActionTubesV2"
+mv $src dst
+f_name="${dst}/${filename}"
+unzip -q $f_name}-d $dst
+rm $f_name
 
 #Pretrained models
 
