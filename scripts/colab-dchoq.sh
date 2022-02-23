@@ -61,26 +61,35 @@ filename="HockeyFightsDATASET.zip"
 gdown --id 1CiIzh99DeL_8JdkcUqIGUMjysCLJWNM8
 src="/content/${filename}"
 dst="/content/DATASETS/ActionTubesV2"
-mv $src dst
+mv $src ${dst}
 f_name="${dst}/${filename}"
-unzip -q $f_name}-d $dst
+unzip -q $f_name -d $dst
 rm $f_name
 
 #Pretrained models
 
-#Restore training
-# id="1-RDg150Os9C4ZxynJOUBgUA6mmH8PQWs"
-# echo "===> Downloading ${id}"
-# gdown --id $id
-# src="/content/$(ls -t | head -1)"
-# dst="/content/DATASETS/Pretrained_Models"
-# echo "===> Moving ${src} to ${dst}"
-# mv $src ${dst}
+id="1oH7WtUMg-juZe3zdgiqcYGd26XmkjJ71"
+echo "===> Downloading I3D model: ${id}"
+gdown --id $id
+src="/content/$(ls -t | head -1)"
+dst="/content/DATASETS/Pretrained_Models"
+echo "===> Moving ${src} to ${dst}"
+mv $src ${dst}
+
+#Pretrained models: TF
+
+id="1oH7WtUMg-juZe3zdgiqcYGd26XmkjJ71"
+echo "===> Downloading Initial model for Transfer learning: ${id}"
+gdown --id $id
+src="/content/$(ls -t | head -1)"
+dst="/content/DATASETS/Pretrained_Models"
+echo "===> Moving ${src} to ${dst}"
+mv $src ${dst}
 
 # #Installing yacs
-# echo "===> Installing yacs"
-# pip3 install yacs
+echo "===> Installing yacs"
+pip3 install yacs
 
 # #Installing CUDA
-# echo "===> Installing yacs"
-# pip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaudio==0.8.0 -f https://download.pytorch.org/whl/torch_stable.html
+echo "===> Installing CUDA"
+pip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaudio==0.8.0 -f https://download.pytorch.org/whl/torch_stable.html

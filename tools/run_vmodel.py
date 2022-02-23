@@ -126,12 +126,15 @@ def main(h_path):
         criterion = nn.BCELoss().to(device)
     
     start_epoch = 0
-    ##Restore training
-    if cfg.MODEL.RESTORE_TRAIN:
-        print('Restoring training from: ', cfg.MODEL.CHECKPOINT_PATH)
-        model, optimizer, epochs, last_epoch, last_loss = load_checkpoint(model, device, optimizer, cfg.MODEL.CHECKPOINT_PATH)
+    ##Restore training & Transfer learning
+    if cfg.MODEL.RESTORE_TRAIN.ACTIVE:
+        print('Restoring training from: ', cfg.MODEL.RESTORE_TRAIN.CHECKPOINT_PATH)
+        model, optimizer, epochs, last_epoch, last_loss = load_checkpoint(model, device, optimizer, cfg.MODEL.RESTORE_TRAIN.CHECKPOINT_PATH)
         start_epoch = last_epoch+1
         # config.num_epoch = epochs
+    elif cfg.MODEL.TRANSF_LEARNING.ACTIVE:
+        print('TF: Initializing from: ', cfg.MODEL.TRANSF_LEARNING.CHECKPOINT_PATH)
+        model, _, _, _, _ = load_checkpoint(model, device, optimizer, cfg.MODEL.TRANSF_LEARNING.CHECKPOINT_PATH)
     
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
