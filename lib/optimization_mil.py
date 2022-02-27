@@ -84,6 +84,40 @@ def train_regressor(
     )
     return train_loss, train_acc
 
+def val_regressor(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
+    print('validation at epoch: {}'.format(_epoch))
+    # set model to evaluate mode
+    _model.eval()
+    # meters
+    losses = AverageMeter()
+    accuracies = AverageMeter()
+    for _, data in enumerate(_loader):
+        boxes, video_images, labels, paths, key_frames = data
+        boxes, video_images = boxes.to(_device), video_images.to(_device)
+        labels = labels.to(_device)
+        key_frames = key_frames.to(_device)
+        # video_images, labels, paths, key_frames, _ = data
+        # video_images = video_images.to(_device)
+        # labels = labels.to(_device)
+        # key_frames = key_frames.to(_device)
+        # boxes = None
+        # no need to track grad in eval mode
+        with torch.no_grad():
+            outputs = _model(video_images, key_frames, boxes, _num_tubes)
+            loss = _criterion(outputs, labels)
+            acc = _accuracy_fn(outputs, labels)
+
+        losses.update(loss.item(), outputs.shape[0])
+        accuracies.update(acc, outputs.shape[0])
+    val_loss = losses.avg
+    val_acc = accuracies.avg
+    print(
+        'Epoch: [{}]\t'
+        'Loss(val): {loss:.4f}\t'
+        'Acc(val): {acc:.3f}'.format(_epoch, loss=val_loss, acc=val_acc)
+    )
+    return val_loss, val_acc
+
 def get_tube_scores(_model, _video_images, _key_frames, _boxes, _device):
     """Get tube scores using a trained model. 
 
@@ -152,7 +186,7 @@ def mAP(y_true, pred, thresholds=[0.5, 0.2]):
         aps.append(AP)
     return aps[0], aps[1]
 
-def val_regressor(cfg, val_make_dataset, transformations, _model, _device, _epoch, _data_root, _tube_ann_path):
+def val_regressor_UCFCrime2Local(cfg, val_make_dataset, transformations, _model, _device, _epoch, _data_root, _tube_ann_path):
     """[summary]
 
     Args:

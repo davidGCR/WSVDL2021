@@ -11,8 +11,8 @@ from datasets.make_dataset_handler import load_make_dataset, load_make_dataset_U
 from datasets.dataloaders import data_with_tubes, data_with_tubes_localization
 
 from lib.optimization import train, val, val_map
-from lib.optimization_mil import train_regressor, val_regressor
-from lib.accuracy import calculate_accuracy_2
+from lib.optimization_mil import train_regressor, val_regressor, val_regressor_UCFCrime2Local
+from lib.accuracy import calculate_accuracy_2, calculate_accuracy_regressor
 
 import torch
 from torch import nn
@@ -33,7 +33,8 @@ def main(h_path):
     # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
-    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool-MIL.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
@@ -80,10 +81,20 @@ def main(h_path):
                                         train=True,
                                         category=2,
                                         shuffle=False)
-        make_dataset_val = load_make_dataset_UCFCrime2Local(Path(cfg.ENVIRONMENT.DATASETS_ROOT))
-        train_loader, TWO_STREAM_INPUT_val = data_with_tubes_localization(cfg, make_dataset_train)
-        # from debug_loc_dataset import debug_ucfcrime2localclips_dataset
-        # debug_ucfcrime2localclips_dataset(make_dataset_val, TWO_STREAM_INPUT_val)
+        if cfg.DATA.DATASET == UCFCrimeReduced_DATASET:
+            make_dataset_val = load_make_dataset_UCFCrime2Local(Path(cfg.ENVIRONMENT.DATASETS_ROOT))
+            train_loader, TWO_STREAM_INPUT_val = data_with_tubes_localization(cfg, make_dataset_train)
+            # from debug_loc_dataset import debug_ucfcrime2localclips_dataset
+            # debug_ucfcrime2localclips_dataset(make_dataset_val, TWO_STREAM_INPUT_val)
+        elif cfg.DATA.DATASET == RWF_DATASET:
+            make_dataset_val = load_make_dataset(cfg.DATA,
+                                        env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
+                                        min_clip_len=min_clip_len,
+                                        train=False,
+                                        category=2,
+                                        shuffle=False)                           
+            train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
+
     else:
         print("Error: Unrecognized head name!!!")
         raise NotImplementedError()
@@ -246,25 +257,44 @@ def main(h_path):
             scheduler.step(train_loss)
             writer.add_scalar('training loss', train_loss, epoch)
             
-            if (epoch+1)%cfg.SOLVER.VALIDATE_EVERY == 0:
-                ap05, ap02 = val_regressor(cfg.TUBE_DATASET,
-                                        make_dataset_val, 
-                                        TWO_STREAM_INPUT_val, 
-                                        model, 
-                                        device, 
-                                        epoch,
-                                        Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips",
-                                        Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"ActionTubesV2/UCFCrime2LocalClips")
-                writer.add_scalar('AP-0.5', ap05, epoch)
-                writer.add_scalar('AP-0.2', ap02, epoch)
-        
+            if cfg.DATA.DATASET == UCFCrimeReduced_DATASET:
+                if (epoch+1)%cfg.SOLVER.VALIDATE_EVERY == 0:
+                    ap05, ap02 = val_regressor_UCFCrime2Local(cfg.TUBE_DATASET,
+                                            make_dataset_val, 
+                                            TWO_STREAM_INPUT_val, 
+                                            model, 
+                                            device, 
+                                            epoch,
+                                            Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"UCFCrime2Local/UCFCrime2LocalClips",
+                                            Path(cfg.ENVIRONMENT.DATASETS_ROOT)/"ActionTubesV2/UCFCrime2LocalClips")
+                    writer.add_scalar('AP-0.5', ap05, epoch)
+                    writer.add_scalar('AP-0.2', ap02, epoch)
+            elif cfg.DATA.DATASET == RWF_DATASET:
+                val_loss, val_acc = val(
+                    val_loader,
+                    epoch, 
+                    model, 
+                    criterion,
+                    device,
+                    cfg.TUBE_DATASET.NUM_TUBES,
+                    calculate_accuracy_regressor)
+                scheduler.step(val_loss)
+                writer.add_scalar('validation loss', val_loss, epoch)
+                writer.add_scalar('validation accuracy', val_acc, epoch)
+
         else:
             print("Error: Unrecognized head name!!!")
             raise NotImplementedError()
 
 
         if (epoch+1)%cfg.SOLVER.SAVE_EVERY == 0:
-            save_checkpoint(model, cfg.SOLVER.EPOCHS, epoch, optimizer,train_loss, os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
+            save_checkpoint(
+                model, 
+                cfg.SOLVER.EPOCHS, 
+                epoch, 
+                optimizer,
+                train_loss, 
+                os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
     h_path = HOME_COLAB

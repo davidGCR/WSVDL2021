@@ -1,7 +1,7 @@
 import torch
 
 
-def get_accuracy(y_prob, y_true):
+def calculate_accuracy_regressor(y_prob, y_true):
     """[summary]
 
     Args:

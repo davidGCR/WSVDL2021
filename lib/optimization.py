@@ -18,8 +18,6 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
         key_frames = key_frames.to(_device)
-       
-
         # video_images, labels, paths, key_frames, _ = data
         # video_images = video_images.to(_device)
         # labels = labels.to(_device)
@@ -90,9 +88,6 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
         key_frames = key_frames.to(_device)
-        
-        
-
         # video_images, labels, paths, key_frames, _ = data
         # video_images = video_images.to(_device)
         # labels = labels.to(_device)
