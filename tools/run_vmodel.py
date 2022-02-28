@@ -51,8 +51,8 @@ def main(h_path):
     # exit()
 
     device = get_torch_device()
+    min_clip_len = cfg.TUBE_DATASET.STRIDE*cfg.TUBE_DATASET.SEQ_LEN if cfg.DATA.DATASET == CCTVFight_DATASET else 0
     if cfg.MODEL._HEAD.NAME == BINARY:
-        min_clip_len = cfg.TUBE_DATASET.STRIDE*cfg.TUBE_DATASET.SEQ_LEN if cfg.DATA.DATASET == CCTVFight_DATASET else 0
         make_dataset_train = load_make_dataset(cfg.DATA,
                                         env_datasets_root=cfg.ENVIRONMENT.DATASETS_ROOT,
                                         min_clip_len=min_clip_len,
@@ -244,15 +244,15 @@ def main(h_path):
                 writer.add_scalar('mAP', mAP, epoch)
         elif cfg.MODEL._HEAD.NAME == REGRESSION:
             train_loss, train_acc = train_regressor(
-                train_loader, 
-                epoch, 
-                model, 
-                criterion, 
-                optimizer, 
-                device, 
-                cfg.TUBE_DATASET.NUM_TUBES, 
-                None,
-                False)
+                                                    train_loader, 
+                                                    epoch, 
+                                                    model, 
+                                                    criterion, 
+                                                    optimizer, 
+                                                    device, 
+                                                    cfg.TUBE_DATASET.NUM_TUBES, 
+                                                    calculate_accuracy_regressor,
+                                                    False)
 
             scheduler.step(train_loss)
             writer.add_scalar('training loss', train_loss, epoch)

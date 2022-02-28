@@ -10,6 +10,7 @@ import torch
 import numpy as np
 from sklearn import metrics
 import os
+from tqdm import tqdm
 
 def train_regressor(
     _loader, 
@@ -25,8 +26,10 @@ def train_regressor(
     _model.train()
     losses = AverageMeter()
     accuracies = AverageMeter()
-    for i, data in enumerate(_loader):
-        boxes, video_images, labels, num_tubes, paths, key_frames = data
+    for i, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
+        # boxes, video_images, labels, paths, key_frames = data
+        # boxes, video_images, labels, num_tubes, paths, key_frames = data
+        boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.float().to(_device)
         key_frames = key_frames.to(_device)
@@ -91,10 +94,10 @@ def val_regressor(_loader, _epoch, _model, _criterion, _device, _num_tubes, _acc
     # meters
     losses = AverageMeter()
     accuracies = AverageMeter()
-    for _, data in enumerate(_loader):
+    for _, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
         boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
-        labels = labels.to(_device)
+        labels = labels.float().to(_device)
         key_frames = key_frames.to(_device)
         # video_images, labels, paths, key_frames, _ = data
         # video_images = video_images.to(_device)
