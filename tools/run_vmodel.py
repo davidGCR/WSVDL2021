@@ -10,7 +10,7 @@ from utils.create_log_name import log_name
 from datasets.make_dataset_handler import load_make_dataset, load_make_dataset_UCFCrime2Local
 from datasets.dataloaders import data_with_tubes, data_with_tubes_localization
 
-from lib.optimization import train, val, val_map
+from lib.optimization import train, val, val_map, validate_long_videos
 from lib.optimization_mil import train_regressor, val_regressor, val_regressor_UCFCrime2Local
 from lib.accuracy import calculate_accuracy_2, calculate_accuracy_regressor
 
@@ -18,12 +18,6 @@ import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
-
-#validation log  videos
-from datasets.CCTVFights_dataset import SequentialDataset
-from torch.utils.data import DataLoader
-from datasets.collate_fn import my_collate
-from sklearn.metrics import average_precision_score
 
 from tqdm import tqdm
 
@@ -152,54 +146,6 @@ def main(h_path):
         verbose=True,
         factor=cfg.SOLVER.OPTIMIZER.FACTOR,
         min_lr=cfg.SOLVER.OPTIMIZER.MIN_LR)
-
-    
-    def validate_long_videos(cfg, make_fn, clip_len, tubes_path, transforms,_epoch , **kwargs):
-        print('validation at epoch: {}'.format(_epoch))
-        
-        
-        paths, frame_rates, tmp_annotations, person_det_files = make_fn()
-        ypred = torch.zeros(0,dtype=torch.long, device='cpu')
-        ytrue = torch.zeros(0,dtype=torch.long, device='cpu')
-        for j, (path, frame_rate, tmp_annot, pers_detect_annot) in tqdm(enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)), total=len(paths), leave=False):
-            # print(j, path)
-            # print("tmp_annot: ", tmp_annot)
-            # print("pers_detect_annot: ", pers_detect_annot)
-            # print("frame_rate: ", frame_rate)
-            dataset = SequentialDataset(cfg=cfg,
-                                        seq_len=clip_len, 
-                                        tubes_path=tubes_path, 
-                                        pers_detect_annot=pers_detect_annot, 
-                                        annotations=tmp_annot, 
-                                        video_path=path, 
-                                        frame_rate=frame_rate, 
-                                        transforms=transforms)
-
-            loader = DataLoader(dataset,
-                            batch_size=1,
-                            shuffle=False,
-                            num_workers=0,
-                            collate_fn=my_collate
-                            )
-            
-            ytrue_video, ypred_video = val_map(loader,
-                                                kwargs["epoch"], 
-                                                kwargs["model"], 
-                                                kwargs["criterion"],
-                                                kwargs["device"],
-                                                kwargs["num_tubes"])
-            ytrue = torch.cat([ytrue, ytrue_video.view(-1).cpu()])
-            ypred = torch.cat([ypred, ypred_video.view(-1).cpu()])
-        # print('ytrue: ', ytrue.size())
-        # print('ypred: ', ypred.size())
-        # print('lens: ', ytrue.size(), ypred.size())
-        
-        map = average_precision_score(ytrue.cpu().numpy(), ypred.cpu().numpy())
-        print(
-            'Epoch: [{}]\t'
-            'map(val): {map:.4f}\t'.format(_epoch, map=map)
-        )
-        return map
     
     for epoch in range(start_epoch, cfg.SOLVER.EPOCHS):
         if cfg.MODEL._HEAD.NAME == BINARY:
@@ -270,7 +216,7 @@ def main(h_path):
                     writer.add_scalar('AP-0.5', ap05, epoch)
                     writer.add_scalar('AP-0.2', ap02, epoch)
             elif cfg.DATA.DATASET == RWF_DATASET:
-                val_loss, val_acc = val(
+                val_loss, val_acc = val_regressor(
                     val_loader,
                     epoch, 
                     model, 

@@ -6,6 +6,12 @@ import time
 from sklearn.metrics import average_precision_score
 from tqdm import tqdm
 
+#validation log  videos
+from datasets.CCTVFights_dataset import SequentialDataset
+from torch.utils.data import DataLoader
+from datasets.collate_fn import my_collate
+from sklearn.metrics import average_precision_score
+
 def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
     print('training at epoch: {}'.format(_epoch))
     _model.train()
@@ -96,7 +102,7 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
         # no need to track grad in eval mode
         with torch.no_grad():
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
-            loss = _criterion(outputs, labels)
+            loss = _criterion(outputs, labels) if _criterion is not None else 0
             acc = _accuracy_fn(outputs, labels)
 
         losses.update(loss.item(), outputs.shape[0])
@@ -225,6 +231,7 @@ def train_2d_branch(
     return train_loss, train_acc
 
 def val_2d_branch(_loader, _epoch, _model, _criterion, _device, _config, _accuracy_fn):
+
     print('validation at epoch: {}'.format(_epoch))
     # set model to evaluate mode
     _model.eval()
@@ -254,3 +261,48 @@ def val_2d_branch(_loader, _epoch, _model, _criterion, _device, _config, _accura
     
 
     return val_loss, val_acc
+
+def validate_long_videos(cfg, make_fn, clip_len, tubes_path, transforms,_epoch , **kwargs):
+        print('validation at epoch: {}'.format(_epoch))
+        paths, frame_rates, tmp_annotations, person_det_files = make_fn()
+        ypred = torch.zeros(0,dtype=torch.long, device='cpu')
+        ytrue = torch.zeros(0,dtype=torch.long, device='cpu')
+        for j, (path, frame_rate, tmp_annot, pers_detect_annot) in tqdm(enumerate(zip(paths, frame_rates, tmp_annotations, person_det_files)), total=len(paths), leave=False):
+            # print(j, path)
+            # print("tmp_annot: ", tmp_annot)
+            # print("pers_detect_annot: ", pers_detect_annot)
+            # print("frame_rate: ", frame_rate)
+            dataset = SequentialDataset(cfg=cfg,
+                                        seq_len=clip_len, 
+                                        tubes_path=tubes_path, 
+                                        pers_detect_annot=pers_detect_annot, 
+                                        annotations=tmp_annot, 
+                                        video_path=path, 
+                                        frame_rate=frame_rate, 
+                                        transforms=transforms)
+
+            loader = DataLoader(dataset,
+                            batch_size=1,
+                            shuffle=False,
+                            num_workers=0,
+                            collate_fn=my_collate
+                            )
+            
+            ytrue_video, ypred_video = val_map(loader,
+                                                kwargs["epoch"], 
+                                                kwargs["model"], 
+                                                kwargs["criterion"],
+                                                kwargs["device"],
+                                                kwargs["num_tubes"])
+            ytrue = torch.cat([ytrue, ytrue_video.view(-1).cpu()])
+            ypred = torch.cat([ypred, ypred_video.view(-1).cpu()])
+        # print('ytrue: ', ytrue.size())
+        # print('ypred: ', ypred.size())
+        # print('lens: ', ytrue.size(), ypred.size())
+        
+        map = average_precision_score(ytrue.cpu().numpy(), ypred.cpu().numpy())
+        print(
+            'Epoch: [{}]\t'
+            'map(val): {map:.4f}\t'.format(_epoch, map=map)
+        )
+        return map

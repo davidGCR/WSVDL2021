@@ -107,7 +107,7 @@ def val_regressor(_loader, _epoch, _model, _criterion, _device, _num_tubes, _acc
         # no need to track grad in eval mode
         with torch.no_grad():
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
-            loss = _criterion(outputs, labels)
+            loss = _criterion(outputs, labels) if _criterion is not None else 0
             acc = _accuracy_fn(outputs, labels)
 
         losses.update(loss.item(), outputs.shape[0])
