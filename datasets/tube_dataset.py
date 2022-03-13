@@ -263,8 +263,8 @@ class TubeDataset(data.Dataset):
             final_tube_boxes = [fake_boxes_t[0]] #final_tube_boxes[0]:  torch.Size([1, 4])
             # print('\t final_tube_boxes[0]: ', final_tube_boxes[0].size())
         else:
-            # tubes_ = self.load_tube_from_file(annotation)
-            tubes = self.extract_tubes(path, pers_annotation, sampled_clip_indices, clip_frames, label)
+            tubes_ = self.load_tube_from_file(annotation)
+            # tubes_ = self.extract_tubes(path, pers_annotation, sampled_clip_indices, clip_frames, label)
             sampled_frames_indices, chosed_tubes = self.sampler(tubes_)
 
             # for i in range(len(sampled_frames_indices)):

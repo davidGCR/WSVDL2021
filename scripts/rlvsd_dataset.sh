@@ -2,13 +2,19 @@
 #RLVSD Dataset
 echo "===> Preparing RLVSD dataset..."
 gdown --id 1tRZV2Iq1XC4HlATBNVdwc1Bg8EAjkZVn
-filename="RLVSDframes.zip"
+filename="RLVSframes.zip"
 src="/content/${filename}"
 dst="/content/DATASETS"
 mv $src ${dst}
 f_name="${dst}/${filename}"
 unzip -q $f_name -d $dst
 rm $f_name
+
+mkdir /content/DATASETS/RealLifeViolenceDataset
+src="/content/DATASETS/frames"
+dst="/content/DATASETS/RealLifeViolenceDataset"
+mv $src ${dst}
+
 
 ##splits
 echo "===> Downloading splits..."
