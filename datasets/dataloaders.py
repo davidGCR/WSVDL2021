@@ -107,6 +107,41 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
                             )
     return train_loader, val_loader, train_dataset, val_dataset, transforms_config_train, transforms_config_val
 
+def data_with_tubes_val(cfg, make_dataset_val):
+    """Build dataloaders for val sets.
+
+    Args:
+        cfg (yaml): Main yaml file
+        make_dataset_val (function): make function of val/test set
+
+    Returns:
+        tuple: (val_loader, val_dataset) dataloaders and datasets
+    """
+    transforms_config_train = {
+        'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
+    }
+    transforms_config_val = {
+        'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None),
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val') 
+    }
+
+    if cfg.DATA.DATASET == 'CCTVFights':
+        val_dataset = None
+        val_loader = None
+    else:
+        val_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_val, transforms_config_val, cfg.DATA.DATASET, False)
+        val_loader = DataLoader(val_dataset,
+                            batch_size=cfg.DATALOADER.VAL_BATCH,
+                            # shuffle=True,
+                            num_workers=cfg.DATALOADER.NUM_WORKERS,
+                            sampler=get_sampler(val_dataset.labels),
+                            # pin_memory=True,
+                            collate_fn=my_collate,
+                            drop_last=cfg.DATALOADER.DROP_LAST
+                            )
+    return val_loader, val_dataset, transforms_config_val
+
 def dataloaders_for_CCTVFights(cfg, make_dataset_train, make_dataset_val):
     """Build dataloaders for train and val sets specifically for CCTVFights dataset.
 

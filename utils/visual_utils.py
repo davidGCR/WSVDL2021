@@ -1,5 +1,7 @@
 from PIL import Image, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+import numpy as np
+import cv2
 
 color = {'green':(0,255,0),
         'blue':(255,165,0),

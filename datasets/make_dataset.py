@@ -181,6 +181,7 @@ class MakeRWF2000():
                 category=CATEGORY_ALL,
                 path_annotations=None, 
                 path_feat_annotations=None,
+                path_person_detections=None,
                 shuffle=False):
         self.root = root
         self.train = train

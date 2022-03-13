@@ -89,7 +89,7 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     # meters
     losses = AverageMeter()
     accuracies = AverageMeter()
-    for _, data in enumerate(_loader):
+    for _, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
         boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
@@ -104,8 +104,8 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
             loss = _criterion(outputs, labels) if _criterion is not None else 0
             acc = _accuracy_fn(outputs, labels)
-
-        losses.update(loss.item(), outputs.shape[0])
+        if _criterion is not None:
+            losses.update(loss.item(), outputs.shape[0])
         accuracies.update(acc, outputs.shape[0])
     val_loss = losses.avg
     val_acc = accuracies.avg

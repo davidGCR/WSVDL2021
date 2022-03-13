@@ -7,7 +7,7 @@ from lib.accuracy import calculate_accuracy_2, calculate_accuracy_regressor
 
 from utils.utils import get_torch_device, load_checkpoint
 from datasets.make_dataset_handler import load_make_dataset, load_make_dataset_UCFCrime2Local
-from datasets.dataloaders import data_with_tubes, data_with_tubes_localization
+from datasets.dataloaders import data_with_tubes, data_with_tubes_localization, data_with_tubes_val
 from models.TwoStreamVD_Binary_CFam import TwoStreamVD_Binary_CFam
 import torch
 
@@ -26,7 +26,7 @@ def main(h_path):
                                         train=False,
                                         category=2,
                                         shuffle=False)                           
-        train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val = data_with_tubes(cfg, None, make_dataset_val)
+        val_loader, val_dataset, transforms_val = data_with_tubes_val(cfg, make_dataset_val)
     
     elif cfg.MODEL._HEAD.NAME == REGRESSION:
         if cfg.DATA.DATASET == UCFCrimeReduced_DATASET:
@@ -44,9 +44,9 @@ def main(h_path):
         raise NotImplementedError()
 
     model = TwoStreamVD_Binary_CFam(cfg.MODEL).to(device)
-    model, _, _, _, _ = load_checkpoint(model, device, None, cfg.MODEL.TRANSF_LEARNING.CHECKPOINT_PATH)
+    model, _, _, _, _ = load_checkpoint(model, device, None, cfg.MODEL.INFERENCE.CHECKPOINT_PATH)
 
-    for epoch in range(0, cfg.INFERENCE.REPETITIONS):
+    for epoch in range(0, cfg.MODEL.INFERENCE.REPETITIONS):
         if cfg.MODEL._HEAD.NAME == BINARY:
             if not cfg.DATA.DATASET == CCTVFight_DATASET:
                 val_loss, val_acc = val(

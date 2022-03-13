@@ -7,7 +7,7 @@ import pandas as pd
 import traceback
 from utils.visual_utils import draw_boxes, imread, color
 from utils.tube_utils import bbox_iou_numpy, merge_bboxes, merge_bboxes_numpy, create_video
-
+from pathlib import Path
 
 FLAC_MERGED_1 = -1
 FLAC_MERGED_2 = -2
@@ -212,6 +212,7 @@ class IncrementalLinking:
                 print("segment: ", segment, " index: ", f)
                 traceback.print_exc()
             img_path = os.path.join(self.dataset_root, split, video, frame)
+            # print('\nimg_path: ', img_path)
             assert os.path.isfile(img_path), print('File: {} does not exist!!!'.format({img_path}))
             img_paths.append(img_path)
             images.append(np.array(imread(img_path)))
@@ -232,6 +233,7 @@ class IncrementalLinking:
     def get_boxes_from_dict(self, motion_map, frame_t):
         boxes = []
         for fff in motion_map:
+            # print('\n--', fff['frame'], self.video_detections[frame_t]['fname'])
             if fff['frame'] == self.video_detections[frame_t]['fname']:
                 boxes = fff['top_k_m_regions']
                 boxes = [[b['x1'], b['y1'], b['x2'], b['y2'], b['id']] for b in boxes]
@@ -282,6 +284,7 @@ class IncrementalLinking:
                     }
                     video_windows.append(current_window)
             # print('fname: {}, frame_idx: {} , window: {}, real_frame: {}'.format(t, t, w, self.video_detections[t]['fname']))
+            # print('current_window: ', current_window)
             #initialize tube building
             num_persons = self.video_detections[t]['pred_boxes'].shape[0]
             if num_persons == 0: #no persons detected in frame
@@ -308,9 +311,9 @@ class IncrementalLinking:
                 # print('----persons:\n', self.video_detections[t]['pred_boxes'])
                 # print('----merged boxes:\n', merge_pred_boxes)
                 motion_regions_numpy = self.get_boxes_from_dict(current_window['motion_regions_map'],t)
-                # print('current_window[motion_regions_map]: ', current_window['motion_regions_map']) 
+                # print('\nhereee  current_window[motion_regions_map]: ', current_window['motion_regions_map']) 
 
-                # print('motion_regions_numpy: ', motion_regions_numpy, motion_regions_numpy.shape) 
+                # print('\nmotion_regions_numpy: ', motion_regions_numpy, type(motion_regions_numpy)) 
                 # print('merge_pred_boxes: ', merge_pred_boxes, merge_pred_boxes.shape) 
                 if motion_regions_numpy.shape[0] == 0:
                     continue
@@ -736,7 +739,8 @@ class IncrementalLinking:
         for t in frames:
             img_path, image, pred_boxes = self.load_frame(t)
             # frame_name = img_path.split('/')[-1][:-4]
-            frame_name = img_path.split('/')[-1]
+            # frame_name = img_path.split('/')[-1]
+            frame_name = Path(img_path).name
             # print('frame_name: ',frame_name)
 
             #ground truth
@@ -812,10 +816,11 @@ class IncrementalLinking:
                                                 line_thick=2, 
                                                 line_color=colors)
             images_to_video.append(image)
-            cv2.namedWindow('FRAME'+frame_name,cv2.WINDOW_NORMAL)
-            cv2.resizeWindow('FRAME'+frame_name, (600,600))
+            # cv2.namedWindow('FRAME'+frame_name,cv2.WINDOW_NORMAL)
+            # cv2.resizeWindow('FRAME'+frame_name, (600,600))
             image = cv2.resize(image, (600,600))
-            cv2.imshow('FRAME'+frame_name, image)
+            # cv2.imshow('FRAME'+frame_name, image)
+            cv2.imshow('FRAME', image)
             key = cv2.waitKey(plot_wait)#pauses for 3 seconds before fetching next image
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows() 

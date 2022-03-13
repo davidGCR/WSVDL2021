@@ -14,7 +14,7 @@ import torch.utils.data as data
 from torch.utils.data import dataset
 import torchvision.transforms as transforms
 
-# from datasets.tube_crop import TubeCrop
+from configs.tube_config import TUBE_BUILD_CONFIG, MOTION_SEGMENTATION_CONFIG
 
 from transformations.dynamic_image_transformation import DynamicImage
 # from transformations.temporal_transforms import CenterCrop, RandomCrop
@@ -22,7 +22,10 @@ from transformations.dynamic_image_transformation import DynamicImage
 from utils.global_var import *
 from utils.utils import natural_sort
 from utils.dataset_utils import imread, filter_data_without_tubelet, JSON_2_tube, check_no_tubes
+from utils.tube_utils import JSON_2_videoDetections, JSON_2_tube, tube_2_JSON
 from datasets.create_tube_sampler import get_sampler
+
+from tubes.run_tube_gen import extract_tubes_from_video
 
 class TubeDataset(data.Dataset):
     def __init__(self, cfg, make_fn, inputs_config, dataset, train_set):
@@ -199,6 +202,31 @@ class TubeDataset(data.Dataset):
        
         return tube_images_t, tube_boxes_t, tube_boxes, tube_boxes_raw_size, raw_clip_images, t_combination
 
+    def extract_tubes(self, 
+                      video_path, 
+                      pers_annotation, 
+                      sequence, 
+                      sequence_video_names,
+                      label):
+        # print('video_path: ', video_path)
+        video_name = video_path.split('/')[-1]
+        frame_s = sequence_video_names[0].split('_')[-1][0:-4]
+        frame_e = sequence_video_names[-1].split('_')[-1][0:-4]
+        
+        tube_path = os.path.join(self.tube_folder, "{}_from_{}_to_{}_{}.json".format(video_name, frame_s, frame_e, label))
+        # print('start_frame: {}, end_frame: {}/ tube_p:{}--label: {}'.format(sequence_video_names[0], sequence_video_names[-1], tube_path, label))
+        if not os.path.isfile(tube_path):
+            # print("tube not found, extracting at: ", tube_path)
+            person_detections = JSON_2_videoDetections(pers_annotation)
+            TUBE_BUILD_CONFIG['person_detections'] = person_detections
+            if self.train_set:
+                TUBE_BUILD_CONFIG['train_mode'] = True
+            tubes, time = extract_tubes_from_video(sequence, sequence_video_names, MOTION_SEGMENTATION_CONFIG, TUBE_BUILD_CONFIG, None)
+            tube_2_JSON(tube_path, tubes)
+        else:
+            # print('reusing tube: ', tube_path)
+            tubes = JSON_2_tube(tube_path)
+        return tubes
 
     def load_tube_from_file(self, annotation):
         if self.dataset == 'UCFCrime':
@@ -235,11 +263,8 @@ class TubeDataset(data.Dataset):
             final_tube_boxes = [fake_boxes_t[0]] #final_tube_boxes[0]:  torch.Size([1, 4])
             # print('\t final_tube_boxes[0]: ', final_tube_boxes[0].size())
         else:
-            # max_video_len = self.video_max_len(index)
-            tubes_ = self.load_tube_from_file(annotation)
-            #remove tubes with len=1
-            # tubes_ = [t for t in tubes_ if t['len'] > 1]
-            # print('\n\ntubes_: ', tubes_)
+            # tubes_ = self.load_tube_from_file(annotation)
+            tubes = self.extract_tubes(path, pers_annotation, sampled_clip_indices, clip_frames, label)
             sampled_frames_indices, chosed_tubes = self.sampler(tubes_)
 
             # for i in range(len(sampled_frames_indices)):

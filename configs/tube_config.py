@@ -20,7 +20,7 @@ TUBE_BUILD_CONFIG = {
     'dataset_root': "/media/david/datos/Violence DATA/CCTVFights/frames",#"/Users/davidchoqueluqueroman/Documents/DATASETS_Local/CCTVFights/frames", #Change
     'person_detections': '',
     'close_persons_rep': 10,#
-    'temporal_window': 8, #5
+    'temporal_window': 5, #5
     'min_iou_close_persons': 0.3,
     'jumpgap': 5,
     'min_window_len': 5,#3,

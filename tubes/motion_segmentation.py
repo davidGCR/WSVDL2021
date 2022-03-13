@@ -11,6 +11,7 @@ import operator
 from utils.visual_utils import color, imread
 # from tube_config import *
 from sklearn.cluster import KMeans
+from pathlib import Path
 
 class MotionSegmentation:
     def __init__(self, 
@@ -475,8 +476,9 @@ class MotionSegmentation:
             motion_regions_map = []
             # motion_tube = []
             for idx, im in enumerate(images):
-                frame_name = img_paths[idx].split('/')[-1]
-                # print('---',frame_name)
+                # frame_name = img_paths[idx].split('/')[-1]
+                frame_name = Path(img_paths[idx]).name
+                # print('\n--- frame_name in ms: ',frame_name)
                 raw_image = im.copy()
                 im_without_mov, image_componets, best_components = self.non_motion_suppresion(im, dyn_image_norm, bright_pixels, dark_pixels)
                 mr = {
