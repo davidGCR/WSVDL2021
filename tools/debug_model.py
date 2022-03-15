@@ -4,6 +4,7 @@ from models.TwoStreamVD_Binary_CFam import TwoStreamVD_Binary_CFam
 def debug_model(cfg):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = TwoStreamVD_Binary_CFam(cfg).to(device)
+    # print(model)
     print('------- ViolenceDetector --------')
     
     # # model = ViolenceDetectorRegression(aggregate=True).to(device)

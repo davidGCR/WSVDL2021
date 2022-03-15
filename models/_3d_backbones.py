@@ -12,10 +12,30 @@ class Identity(nn.Module):
   def forward(self, x):
       return x
 
-class Backbone3DResNet(nn.Module):
-  def __init__(self):
+class BackboneI3D_V2(nn.Module):
+  def __init__(self, pretrained=None, freeze=False):
     super().__init__()
-    self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=True)
+    if pretrained:
+      # self.backbone = torch.hub.load('I3D_8x8_R50.pyth', 'i3d_r50', source='local')
+      self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'i3d_r50', pretrained=True)
+    # else:
+    #   self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=True)
+    self.backbone.blocks[5] = Identity()
+    self.backbone.blocks[6] = Identity()
+    # self.roi_layer = RoiPoolLayer()
+  
+  def forward(self, x):
+    x = self.backbone(x)
+    # x = self.roi_layer(x, bbox)
+    return x
+
+class Backbone3DResNet(nn.Module):
+  def __init__(self, pretrained=None, freeze=False):
+    super().__init__()
+    if pretrained:
+      self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=True)
+    # else:
+    #   self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=True)
     self.backbone.blocks[4] = Identity()
     self.backbone.blocks[5] = Identity()
     # self.roi_layer = RoiPoolLayer()
@@ -24,6 +44,7 @@ class Backbone3DResNet(nn.Module):
     x = self.backbone(x)
     # x = self.roi_layer(x, bbox)
     return x
+
 
 class BackboneI3D(nn.Module):
   def __init__(self, final_endpoint, pretrained=None, freeze=False):

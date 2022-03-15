@@ -1,5 +1,5 @@
 
-from models._3d_backbones import Backbone3DResNet, BackboneI3D
+from models._3d_backbones import Backbone3DResNet, BackboneI3D, BackboneI3D_V2
 from models._2d_backbones import Backbone2DResNet
 from models.roi_extractor_3d import SingleRoIExtractor3D
 from models.cfam import CFAMBlock 
@@ -93,15 +93,25 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 nn.init.xavier_normal_(layer.weight)
     
     def build_3d_backbone(self):
-        # if self.config['backbone_name'] == 'i3d':
         if self.cfg._3D_BRANCH.NAME == 'i3d':
             backbone = BackboneI3D(
                 self.cfg._3D_BRANCH.FINAL_ENDPOINT,
                 self.cfg._3D_BRANCH.PRETRAINED_MODEL,
                 freeze=self.cfg._3D_BRANCH.FREEZE_3D
                 )
+        if self.cfg._3D_BRANCH.NAME == 'i3dv2':
+            backbone = BackboneI3D_V2(
+                self.cfg._3D_BRANCH.PRETRAINED_MODEL,
+                freeze=self.cfg._3D_BRANCH.FREEZE_3D
+                )
+
+            # print('i3dv2 model:')
+            # print(backbone)
         elif self.cfg._3D_BRANCH.NAME == '3dresnet':
-            backbone = Backbone3DResNet()
+            backbone = Backbone3DResNet(
+                pretrained=self.cfg._3D_BRANCH.PRETRAINED_MODEL,
+                freeze=self.cfg._3D_BRANCH.FREEZE_3D
+            )
         return backbone
     
     def forward_3d_branch(self, x1, bbox=None, num_tubes=0):
@@ -111,8 +121,9 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             batch = int(batch/num_tubes)
             x_3d = self.roi_pool_3d(x_3d,bbox)#torch.Size([8, 528])
-            x_3d = torch.squeeze(x_3d, dim=2)
             # print('3d after roipool: ', x_3d.size())
+            x_3d = torch.squeeze(x_3d, dim=2)
+            
             b_1, c_1, w_1, h_1 = x_3d.size()
 
             if self.cfg._HEAD.NAME == 'binary':
@@ -138,9 +149,10 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             batch = int(batch/num_tubes)
             x_3d = self.roi_pool_3d(x_3d,bbox)#torch.Size([8, 528])
+            # print('3d after roipool: ', x_3d.size())
             x_3d = torch.squeeze(x_3d, dim=2)
             # x_3d = torch.squeeze(x_3d)
-            # print('3d after roipool: ', x_3d.size())
+            
         else:
             x_3d = self.temporal_pool(x_3d)
             # print('3d after tmppool: ', x_3d.size())
