@@ -22,7 +22,21 @@ class BackboneI3D_V2(nn.Module):
     #   self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'slow_r50', pretrained=True)
     self.backbone.blocks[5] = Identity()
     self.backbone.blocks[6] = Identity()
-    # self.roi_layer = RoiPoolLayer()
+  
+  def forward(self, x):
+    x = self.backbone(x)
+    # x = self.roi_layer(x, bbox)
+    return x
+
+class BackboneX3D(nn.Module):
+  def __init__(self, pretrained=None, freeze=False):
+    super().__init__()
+    if pretrained:
+      # self.backbone = torch.hub.load('I3D_8x8_R50.pyth', 'i3d_r50', source='local')
+      self.backbone = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
+
+    self.backbone.blocks[4] = Identity()
+    self.backbone.blocks[5] = Identity()
   
   def forward(self, x):
     x = self.backbone(x)

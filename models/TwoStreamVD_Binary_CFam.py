@@ -1,5 +1,5 @@
 
-from models._3d_backbones import Backbone3DResNet, BackboneI3D, BackboneI3D_V2
+from models._3d_backbones import *
 from models._2d_backbones import Backbone2DResNet
 from models.roi_extractor_3d import SingleRoIExtractor3D
 from models.cfam import CFAMBlock 
@@ -99,7 +99,7 @@ class TwoStreamVD_Binary_CFam(nn.Module):
                 self.cfg._3D_BRANCH.PRETRAINED_MODEL,
                 freeze=self.cfg._3D_BRANCH.FREEZE_3D
                 )
-        if self.cfg._3D_BRANCH.NAME == 'i3dv2':
+        elif self.cfg._3D_BRANCH.NAME == 'i3dv2':
             backbone = BackboneI3D_V2(
                 self.cfg._3D_BRANCH.PRETRAINED_MODEL,
                 freeze=self.cfg._3D_BRANCH.FREEZE_3D
@@ -107,6 +107,11 @@ class TwoStreamVD_Binary_CFam(nn.Module):
 
             # print('i3dv2 model:')
             # print(backbone)
+        elif self.cfg._3D_BRANCH.NAME == 'x3d':
+            backbone = BackboneX3D(
+                self.cfg._3D_BRANCH.PRETRAINED_MODEL,
+                freeze=self.cfg._3D_BRANCH.FREEZE_3D
+                )
         elif self.cfg._3D_BRANCH.NAME == '3dresnet':
             backbone = Backbone3DResNet(
                 pretrained=self.cfg._3D_BRANCH.PRETRAINED_MODEL,

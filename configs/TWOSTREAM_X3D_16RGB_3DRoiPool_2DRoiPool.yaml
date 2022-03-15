@@ -29,7 +29,7 @@ MODEL:
     ACTIVATE: True
     NAME: i3dv2 #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: Accept
+    PRETRAINED_MODEL: /content/drive/My Drive/VIOLENCE DATA/Pretrained_Models/pytorch_i3d/rgb_imagenet.pt
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:
@@ -46,7 +46,7 @@ MODEL:
     WITH_ROIPOOL: True
   _CFAM_BLOCK:
     ACTIVATE: True
-    IN_CHANNELS: 2048 #528+1024 #528+1024,#528+1024, #832+2048
+    IN_CHANNELS: 1120 #528+1024 #528+1024,#528+1024, #832+2048
     OUT_CHANNELS: 512
   # _FC:
   #   INPUT_DIM: 32768 #8*8*512,#512#7105#145,#9280
