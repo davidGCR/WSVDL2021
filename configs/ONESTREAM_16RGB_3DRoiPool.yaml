@@ -12,14 +12,22 @@
 # '/content/DATASETS/Pretrained_Models/rgb_imagenet.pt'
 
 MODEL:
-  NAME: TWO_STREAM_CFAM_CONFIG
-  RESTORE_TRAIN: False
-  CHECKPOINT_PATH: None
+  NAME: ONE_STREAM_CONFIG
+  INFERENCE:
+    ACTIVE: False
+    REPETITIONS: 1
+    CHECKPOINT_PATH: None
+  RESTORE_TRAIN:
+    ACTIVE: False
+    CHECKPOINT_PATH: None
+  TRANSF_LEARNING:
+    ACTIVE: False
+    CHECKPOINT_PATH: None
   _3D_BRANCH:
     ACTIVATE: True
-    NAME: i3d #i3d, 3dresnet
+    NAME: x3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: /Users/davidchoqueluqueroman/Documents/CODIGOS_SOURCES/pytorch-i3d/models/rgb_imagenet.pt
+    PRETRAINED_MODEL: Accept
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:
@@ -30,11 +38,12 @@ MODEL:
     TYPE: RoIAlign
   _2D_BRANCH:
     ACTIVATE: False
+    WITH_ROIPOOL: False
   _CFAM_BLOCK:
     ACTIVATE: False
   _HEAD: 
     NAME: binary
-    INPUT_DIM: 528
+    INPUT_DIM: 96 #i3d:528, 13dv2: 1024, x3d: 96
   
 
 DATA:

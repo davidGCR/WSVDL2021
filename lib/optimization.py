@@ -12,14 +12,16 @@ from torch.utils.data import DataLoader
 from datasets.collate_fn import my_collate
 from sklearn.metrics import average_precision_score
 
-def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
+def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
     print('training at epoch: {}'.format(_epoch))
     _model.train()
     losses = AverageMeter()
     accuracies = AverageMeter()
     batch_time = AverageMeter()
     end_time = time.time()
-    for i, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
+
+    loop = tqdm(enumerate(_loader), total=len(_loader), leave=False)
+    for batch_index, data in loop:
         boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
@@ -53,6 +55,7 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
         loss.backward()
         _optimizer.step()
 
+        
 
         batch_time.update(time.time() - end_time)
         end_time = time.time()
@@ -71,6 +74,9 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
                 )
             )
         
+        loop.set_description(f"Epoch [{_epoch}/{_num_epochs}]")
+        loop.set_postfix(loss=loss.item(), acc=acc, time=batch_time.val)
+
     train_loss = losses.avg
     train_acc = accuracies.avg
     time_ = batch_time.avg
@@ -78,7 +84,7 @@ def train(_loader, _epoch, _model, _criterion, _optimizer, _device, _num_tubes, 
         'Epoch: [{}]\t'
         'Loss(train): {loss:.4f}\t'
         'Acc(train): {acc:.3f}\t'
-        'Time: {tim:.3f}'.format(_epoch, loss=train_loss, acc=train_acc, tim=time_)
+        'Time: {tim:.3f}'.format(_epoch, loss=train_loss, acc=train_acc, tim=time_*batch_time.counter)
     )
     return train_loss, train_acc, time_
 

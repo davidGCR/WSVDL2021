@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from torchvision.models.utils import load_state_dict_from_url
+# from torchvision.models.utils import load_state_dict_from_url
+from torch.hub import load_state_dict_from_url
 from typing import Type, Any, Callable, Union, List, Dict, Optional, cast
 from collections import OrderedDict 
 from torchvision.models.resnet import *
@@ -103,6 +104,7 @@ class Backbone2DResNet(nn.Module):
 
         model = IntResNet(outlayer, block, layers, **kwargs)
         if pretrained:
+            # print('petrained resnet')
             state_dict = load_state_dict_from_url(model_urls[arch],
                                                   progress=progress)
             model.load_state_dict(state_dict)
@@ -115,8 +117,13 @@ class Backbone2DResNet(nn.Module):
 from torchsummary import summary
 from torchvision import models
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 if __name__ ==  '__main__':
-    model = Backbone2DResNet('resnet101','layer3',num_trainable_layers=3)
+    model = Backbone2DResNet('resnet50','layer3',num_trainable_layers=0)
+    params_num = count_parameters(model)
+    print("Num parameters: ", params_num)
     # print(model)
     # summary(model,input_size=(3, 224, 224))
     

@@ -5,7 +5,7 @@ from lib.optimization import val, val_map, validate_long_videos
 from lib.optimization_mil import val_regressor, val_regressor_UCFCrime2Local
 from lib.accuracy import calculate_accuracy_2, calculate_accuracy_regressor
 
-from utils.utils import get_torch_device, load_checkpoint
+from utils.utils import get_torch_device, load_checkpoint, count_parameters
 from datasets.make_dataset_handler import load_make_dataset, load_make_dataset_UCFCrime2Local
 from datasets.dataloaders import data_with_tubes, data_with_tubes_localization, data_with_tubes_val
 from models.TwoStreamVD_Binary_CFam import TwoStreamVD_Binary_CFam
@@ -44,6 +44,9 @@ def main(h_path):
         raise NotImplementedError()
 
     model = TwoStreamVD_Binary_CFam(cfg.MODEL).to(device)
+    params_num = count_parameters(model)
+    print("Num parameters: ", params_num)
+
     model, _, _, _, _ = load_checkpoint(model, device, None, cfg.MODEL.INFERENCE.CHECKPOINT_PATH)
 
     for epoch in range(0, cfg.MODEL.INFERENCE.REPETITIONS):

@@ -29,7 +29,7 @@ MODEL:
     ACTIVATE: True
     NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: /content/drive/My Drive/VIOLENCE DATA/Pretrained_Models/pytorch_i3d/rgb_imagenet.pt
+    PRETRAINED_MODEL: C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/rgb_imagenet.pt
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:
@@ -42,7 +42,7 @@ MODEL:
     ACTIVATE: True
     NAME: resnet50
     FINAL_ENDPOINT: layer3
-    NUM_TRAINABLE_LAYERS: 3
+    NUM_TRAINABLE_LAYERS: 0
     WITH_ROIPOOL: True
   _CFAM_BLOCK:
     ACTIVATE: True

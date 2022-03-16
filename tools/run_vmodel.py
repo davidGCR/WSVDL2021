@@ -24,20 +24,21 @@ from tqdm import tqdm
 def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
-    # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_3DResNet_16RGB_3DRoiPool_2DRoiPool.yaml")
-    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_X3D_16RGB_3DRoiPool_2DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_X3D_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool-MIL.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     # print(cfg)
 
-    # from debug_model import debug_model
+    # from debug_model import debug_model, see_models
     # debug_model(cfg.MODEL)
+    # see_models()
     # exit()
 
     # from debug_dataset import test_cctvfights_datasets
@@ -153,7 +154,8 @@ def main(h_path):
         if cfg.MODEL._HEAD.NAME == BINARY:
             train_loss, train_acc, train_time = train(
                 train_loader, 
-                epoch, 
+                epoch,
+                cfg.SOLVER.EPOCHS, 
                 model, 
                 criterion, 
                 optimizer, 
@@ -245,6 +247,6 @@ def main(h_path):
                 os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_COLAB
+    h_path = HOME_WINDOWS
     torch.autograd.set_detect_anomaly(True)
     main(h_path)
