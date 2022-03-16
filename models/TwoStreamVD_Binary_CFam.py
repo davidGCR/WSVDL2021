@@ -50,11 +50,12 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         # self.with_roipool = self.cfg.WITH_ROIPOOL #config['with_roipool']
         self._3d_stream = self.build_3d_backbone()
         
-        self._2d_stream = Backbone2DResNet(
-            self.cfg._2D_BRANCH.NAME ,#config['2d_backbone'],
-            self.cfg._2D_BRANCH.FINAL_ENDPOINT,#config['base_out_layer'],
-            num_trainable_layers=self.cfg._2D_BRANCH.NUM_TRAINABLE_LAYERS#config['num_trainable_layers']
-            )
+        if self.cfg._2D_BRANCH.ACTIVATE:
+            self._2d_stream = Backbone2DResNet(
+                self.cfg._2D_BRANCH.NAME ,#config['2d_backbone'],
+                self.cfg._2D_BRANCH.FINAL_ENDPOINT,#config['base_out_layer'],
+                num_trainable_layers=self.cfg._2D_BRANCH.NUM_TRAINABLE_LAYERS#config['num_trainable_layers']
+                )
         
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             self.roi_pool_3d = RoiPoolLayer(
