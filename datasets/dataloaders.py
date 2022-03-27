@@ -4,6 +4,7 @@ from datasets.tube_dataset import TubeDataset
 from datasets.collate_fn import my_collate
 from datasets.cnn_input_config import CnnInputConfig
 from datasets.CCTVFights_dataset import ClipDataset, SequentialDataset
+from datasets.dynamicImage_dataset import DynamicImageDataset
 from transformations.model_transforms import *
 from torch.utils.data.sampler import WeightedRandomSampler
 from torch.utils.data import DataLoader
@@ -18,22 +19,42 @@ def get_sampler(labels):
     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
     return sampler
 
-def load_key_frame_config(cfg, split):
+def two_stream_transforms(keyframe_strategy):
+    """Spatial transformations for two stream model
+
+    Args:
+        keyframe_strategy (int): Keyframe strategy
+
+    Returns:
+        tuple: transforms_config_train, transforms_config_val
+    """
+    transforms_config_train = {
+        'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
+        'input_2': load_key_frame_config(keyframe_strategy, 'train') 
+    }
+    transforms_config_val = {
+        'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None),
+        'input_2': load_key_frame_config(keyframe_strategy, 'val') 
+    }
+    return transforms_config_train, transforms_config_val
+    
+
+def load_key_frame_config(keyframe_strategy, split):
     """Build config dict for input of 2d_Branch
 
     Args:
-        cfg (yaml): config file of TubeDataset
+        keyframe_strategy (int): Keyframe strategy
         split (str): split train or val
 
     Returns:
         CnnInputConfig: object with config of the 2d branch
     """
-    if cfg.KEYFRAME_STRATEGY in [RGB_BEGIN_KEYFRAME, RGB_MIDDLE_KEYFRAME, RGB_RANDOM_KEYFRAME]:
+    if keyframe_strategy in [RGB_BEGIN_KEYFRAME, RGB_MIDDLE_KEYFRAME, RGB_RANDOM_KEYFRAME]:
         input_2_c = CnnInputConfig()
         input_2_c.itype = RGB_FRAME
         input_2_c.spatial_transform = resnet_transf()[split]
 
-    elif cfg.KEYFRAME_STRATEGY == DYNAMIC_IMAGE_KEYFRAME:
+    elif keyframe_strategy == DYNAMIC_IMAGE_KEYFRAME:
         input_2_c = CnnInputConfig()
         input_2_c.itype = DYN_IMAGE
         input_2_c.spatial_transform = resnet_di_transf()[split]
@@ -42,6 +63,35 @@ def load_key_frame_config(cfg, split):
         exit()
     return input_2_c
 
+def dataloaders_for_di_model(cfg, make_dataset_train, make_dataset_val):
+    spatial_transform_train = resnet_di_transf()['train']
+    spatial_transform_val = resnet_di_transf()['val']
+    train_dataset = DynamicImageDataset(cfg=cfg.DYNAMIC_IMAGE_DATASET, 
+                                        make_fn=make_dataset_train, 
+                                        train_set=True, 
+                                        transform=spatial_transform_train)
+    
+    val_dataset = DynamicImageDataset(cfg=cfg.DYNAMIC_IMAGE_DATASET, 
+                                        make_fn=make_dataset_val, 
+                                        train_set=False, 
+                                        transform=spatial_transform_val)
+    
+    train_loader = DataLoader(train_dataset,
+                              batch_size=cfg.DATALOADER.TRAIN_BATCH,
+                              shuffle=True,
+                              num_workers=cfg.DATALOADER.NUM_WORKERS,
+                              # pin_memory=True,
+                              drop_last=cfg.DATALOADER.DROP_LAST)
+    val_loader = DataLoader(val_dataset,
+                              batch_size=cfg.DATALOADER.VAL_BATCH,
+                              shuffle=False,
+                              num_workers=cfg.DATALOADER.NUM_WORKERS,
+                              # pin_memory=True,
+                              drop_last=cfg.DATALOADER.DROP_LAST)
+    
+    return train_loader, val_loader, train_dataset, val_dataset
+    
+    
 def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
     """Build dataloaders for train and val sets.
 
@@ -55,11 +105,11 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
     """
     transforms_config_train = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'train') 
     }
     transforms_config_val = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'val') 
     }
 
     if cfg.DATA.DATASET == 'CCTVFights':
@@ -119,11 +169,11 @@ def data_with_tubes_val(cfg, make_dataset_val):
     """
     transforms_config_train = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'train') 
     }
     transforms_config_val = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'val') 
     }
 
     if cfg.DATA.DATASET == 'CCTVFights':
@@ -155,11 +205,11 @@ def dataloaders_for_CCTVFights(cfg, make_dataset_train, make_dataset_val):
     """
     transforms_config_train = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'train') 
     }
     transforms_config_val = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'val') 
     }
 
     # train_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_train, TWO_STREAM_INPUT_train, cfg.DATA.DATASET, True)
@@ -201,12 +251,12 @@ def data_with_tubes_localization(cfg, make_dataset_train):
 
     TWO_STREAM_INPUT_train = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['train'], None),
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'train') 
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'train') 
     }
 
     TWO_STREAM_INPUT_val = {
         'input_1': CnnInputConfig(RGB_FRAME, cnn3d_transf()['val'], None), 
-        'input_2': load_key_frame_config(cfg.TUBE_DATASET, 'val')
+        'input_2': load_key_frame_config(cfg.TUBE_DATASET.KEYFRAME_STRATEGY, 'val')
     }
     
     train_dataset = TubeDataset(cfg.TUBE_DATASET, make_dataset_train, TWO_STREAM_INPUT_train, cfg.DATA.DATASET)

@@ -4,13 +4,8 @@
 import torch
 import torch.nn as nn
 from models.i3d import InceptionI3d
+from models.identity import Identity
 
-class Identity(nn.Module):
-  def __init__(self):
-      super().__init__()
-
-  def forward(self, x):
-      return x
 
 class BackboneI3D_V2(nn.Module):
   def __init__(self, pretrained=None, freeze=False):

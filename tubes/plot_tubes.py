@@ -5,6 +5,13 @@ import cv2
 from pathlib import Path
 
 def plot_tubes(paths, tubes, wait=200):
+    """Plot action tubes
+
+    Args:
+        paths (list): List of image paths
+        tubes (list): List of action tubes
+        wait (int, optional): Plot wait. Defaults to 200.
+    """
     images_to_video = []
     colors = []
     for l in range(len(tubes)):
@@ -56,6 +63,7 @@ def plot_tubes(paths, tubes, wait=200):
         frame = cv2.resize(frame, (600,600))
         # cv2.imshow('FRAME'+frame_name, frame)
         cv2.imshow('FRAME', frame)
-        key = cv2.waitKey(wait)
+        # key = cv2.waitKey(wait)
+        key = cv2.waitKey(0)
         if key == 27:#if ESC is pressed, exit loop
             cv2.destroyAllWindows() 

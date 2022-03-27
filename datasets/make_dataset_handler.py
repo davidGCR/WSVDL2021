@@ -16,9 +16,9 @@ def load_make_dataset(cfg,
     Args:
         cfg (yaml): cfg.DATA
         env_datasets_root (str): Path to datasets folder    
-        min_clip_len (int, optional): Filter videos with min number of frames. Use for CCTVFights dataset. Defaults to 0.
+        min_clip_len (int, optional): Filter videos with min number of frames, only for CCTVFights. Use for CCTVFights dataset. Defaults to 0.
         train (bool, optional): [description]. Defaults to True.
-        category (int, optional): [description]. Defaults to 2.
+        category (int, optional): Only for RWF-2000. Defaults to 2.
         shuffle (bool, optional): [description]. Defaults to False.
 
     Returns:

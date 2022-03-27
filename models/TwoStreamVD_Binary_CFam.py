@@ -3,6 +3,7 @@ from models._3d_backbones import *
 from models._2d_backbones import Backbone2DResNet
 from models.roi_extractor_3d import SingleRoIExtractor3D
 from models.cfam import CFAMBlock 
+from models.identity import Identity
 
 import torch
 from torch import nn
@@ -42,6 +43,26 @@ class RoiPoolLayer(nn.Module):
             x = x.view(x.size(0),-1)
         return x
 
+class TwoStreamVD_Binary_CFam_Eval(nn.Module):
+  def __init__(self, model):
+    super(TwoStreamVD_Binary_CFam_Eval, self).__init__()
+    self.model = model
+    self.model.avg_pool_2d = Identity()
+    self.model.classifier = Identity()
+    
+    self.classifier = nn.Conv2d(512, 1, kernel_size=1, bias=False)
+    self.avg_pool_2d = nn.AdaptiveAvgPool2d((1,1))
+    # self.backbone.blocks[6] = Identity()
+  
+  def forward(self, x1, x2, bbox=None, num_tubes=0):
+    x = self.model(x1, x2, bbox, num_tubes) #torch.Size([512])
+    print('class backbone: ', x.size())
+    x = self.classifier(x)
+    x = self.avg_pool_2d(x)
+    print('after avg2D: ', x.size())
+    x = torch.squeeze(x)
+    x = torch.sigmoid(x)
+    return x
 
 class TwoStreamVD_Binary_CFam(nn.Module):
     def __init__(self, cfg):
