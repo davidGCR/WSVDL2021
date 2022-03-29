@@ -36,6 +36,17 @@ cp -r "$src" $dst
 unzip -q $f_name -d $dst
 rm $f_name
 
+echo "===> Downloading RWF-2000 ActionTubes Scored..."
+id="10nC0l_JQ3sVzoJlHpJpkhZfhe_wHLwFO"
+gdown --id $id
+filename="RWF-2000.zip"
+src="/content/${filename}"
+dst="/content/DATASETS/ActionTubesV2Scored"
+f_name="${dst}/${filename}"
+cp -r "$src" $dst
+unzip -q $f_name -d $dst
+rm $f_name
+
 #Pretrained models
 id="1oH7WtUMg-juZe3zdgiqcYGd26XmkjJ71"
 echo "===> Downloading I3D model: ${id}"

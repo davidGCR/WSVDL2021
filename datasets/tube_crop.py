@@ -54,6 +54,10 @@ class TubeCrop(object):
             else:
                 # chosed_tubes = tubes[0:self.max_num_tubes]
                 print('Here implement the score...')
+                chosed_tubes = sorted(tubes, key=lambda d: float(d['score']), reverse=True)
+                # chosed_tubes = tubes[0:self.max_num_tubes]
+                for t in chosed_tubes:
+                    print(t['score'])
 
         for tube in chosed_tubes:
             frames_idxs = self.__sampled_tube_frames_indices__(tube['foundAt'])

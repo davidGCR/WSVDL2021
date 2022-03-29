@@ -25,9 +25,9 @@ MODEL:
     CHECKPOINT_PATH: None
   _3D_BRANCH:
     ACTIVATE: True
-    NAME: x3d #i3d, 3dresnet
+    NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: Accept
+    PRETRAINED_MODEL: C:/Users/David/Desktop/DATASETS/Pretrained_Models/rgb_imagenet.pt
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:
@@ -50,6 +50,7 @@ DATA:
   DATASET: RWF-2000
   CV_SPLIT: 1
   LOAD_GROUND_TRUTH: False
+  ACTION_TUBES_FOLDER: ActionTubesV2Scored
 DATALOADER:
   TRAIN_BATCH: 4
   VAL_BATCH: 4

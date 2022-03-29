@@ -4,6 +4,7 @@ cd /content
 echo "===> Creating folders..."
 mkdir DATASETS/
 mkdir DATASETS/ActionTubesV2
+mkdir DATASETS/ActionTubesV2Scored
 mkdir DATASETS/Pretrained_Models
 
 #Update wget
