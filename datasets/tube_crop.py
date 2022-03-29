@@ -52,7 +52,8 @@ class TubeCrop(object):
                 # chosed_tubes = list(itemgetter(*chosed_tubes_idxs)(tubes))
                 chosed_tubes = [tubes[i] for i in range(len(tubes)) if i in chosed_tubes_idxs]
             else:
-                chosed_tubes = tubes[0:self.max_num_tubes]
+                # chosed_tubes = tubes[0:self.max_num_tubes]
+                print('Here implement the score...')
 
         for tube in chosed_tubes:
             frames_idxs = self.__sampled_tube_frames_indices__(tube['foundAt'])

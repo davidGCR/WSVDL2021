@@ -60,7 +60,7 @@ TUBE_DATASET:
   USE_TUBES: True
   NUM_FRAMES: 16
   NUM_TUBES: 3
-  RANDOM: True
+  RANDOM: False
   FRAMES_STRATEGY: 0
   BOX_STRATEGY: 1 #0:middle, 1: union, 2: all
   KEYFRAME_STRATEGY: 3 #0: rgb middle frame , 3:dynamic_images

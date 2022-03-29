@@ -3,11 +3,13 @@ import torch
 from utils.dataset_utils import imread
 
 from PIL import Image
+import cv2
 
 class DynamicImage():
-    def __init__(self, output_type="pil", savePath=None):
+    def __init__(self, output_type="pil", savePath=None, vizualize=False):
         self.savePath = savePath
         self.output_type = output_type
+        self.vizualize = vizualize
     
     def __to_tensor__(self, img):
         img = img.astype(np.float32)/255.0
@@ -59,8 +61,17 @@ class DynamicImage():
         img = sm.astype(np.uint8)
         ##to PIL image
         imgPIL = Image.fromarray(np.uint8(img))
+        if self.vizualize:
+            # imgPIL.show()
+            frame = cv2.resize(img, (600,600))
+            # cv2.imshow('FRAME'+frame_name, frame)
+            cv2.imshow('Dynamic Iamge', frame)
+            key = cv2.waitKey(0)
+            if key == 27:#if ESC is pressed, exit loop
+                cv2.destroyAllWindows() 
         if self.savePath is not None:
             imgPIL.save(self.savePath)
+            
         if self.output_type == "ndarray":
             return img
         elif self.output_type == "pil":
