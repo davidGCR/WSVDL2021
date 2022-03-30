@@ -24,10 +24,10 @@ from tqdm import tqdm
 def main(h_path):
     # Setup cfg.
     cfg = get_cfg_defaults()
-    cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
-    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_3DResNet_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_X3D_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool-MIL.yaml")
@@ -247,6 +247,6 @@ def main(h_path):
                 os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_WINDOWS
+    h_path = HOME_COLAB
     torch.autograd.set_detect_anomaly(True)
     main(h_path)

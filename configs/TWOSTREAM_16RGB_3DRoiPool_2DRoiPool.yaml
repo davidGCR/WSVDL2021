@@ -10,13 +10,13 @@
 # '/media/david/datos/Violence DATA/VioNet_weights/pytorch_i3d/rgb_imagenet.pt
 #'/content/drive/My Drive/VIOLENCE DATA/Pretrained_Models/pytorch_i3d/rgb_imagenet.pt'
 # '/content/DATASETS/Pretrained_Models/rgb_imagenet.pt'
-
+# C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/rgb_imagenet.pt
 MODEL:
   NAME: TWO_STREAM_CFAM_CONFIG
   INFERENCE:
-    ACTIVE: False
+    ACTIVE: True
     REPETITIONS: 1
-    CHECKPOINT_PATH: None
+    CHECKPOINT_PATH: C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/save_at_epoch-29.chk
   RESTORE_TRAIN:
     ACTIVE: False
     CHECKPOINT_PATH: None
@@ -29,7 +29,7 @@ MODEL:
     ACTIVATE: True
     NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/rgb_imagenet.pt
+    PRETRAINED_MODEL: '/content/DATASETS/Pretrained_Models/rgb_imagenet.pt'
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:
@@ -56,6 +56,7 @@ DATA:
   DATASET: RWF-2000
   CV_SPLIT: 1
   LOAD_GROUND_TRUTH: False
+  ACTION_TUBES_FOLDER: ActionTubesV2Scored
 DATALOADER:
   TRAIN_BATCH: 4
   VAL_BATCH: 4
