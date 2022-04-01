@@ -1,6 +1,6 @@
 
 from models._3d_backbones import *
-from models._2d_backbones import Backbone2DResNet
+from models._2d_backbones import Backbone2DResNet, MyResNet
 from models.roi_extractor_3d import SingleRoIExtractor3D
 from models.cfam import CFAMBlock 
 from models.identity import Identity
@@ -72,11 +72,12 @@ class TwoStreamVD_Binary_CFam(nn.Module):
         self._3d_stream = self.build_3d_backbone()
         
         if self.cfg._2D_BRANCH.ACTIVATE:
-            self._2d_stream = Backbone2DResNet(
-                self.cfg._2D_BRANCH.NAME ,#config['2d_backbone'],
-                self.cfg._2D_BRANCH.FINAL_ENDPOINT,#config['base_out_layer'],
-                num_trainable_layers=self.cfg._2D_BRANCH.NUM_TRAINABLE_LAYERS#config['num_trainable_layers']
-                )
+            # self._2d_stream = Backbone2DResNet(
+            #     self.cfg._2D_BRANCH.NAME ,#config['2d_backbone'],
+            #     self.cfg._2D_BRANCH.FINAL_ENDPOINT,#config['base_out_layer'],
+            #     num_trainable_layers=self.cfg._2D_BRANCH.NUM_TRAINABLE_LAYERS#config['num_trainable_layers']
+            #     )
+            self._2d_stream = MyResNet(last_layer=self.cfg._2D_BRANCH.FINAL_ENDPOINT)
         
         if self.cfg._3D_BRANCH.WITH_ROIPOOL:
             self.roi_pool_3d = RoiPoolLayer(

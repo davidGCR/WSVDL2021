@@ -120,8 +120,46 @@ from torchvision import models
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+# from identity import Identity
+import torch.nn as nn
+LAYER_4 = 'layer4'
+LAYER_3 = 'layer3'
+
+class MyResNet(nn.Module):
+    def __init__(self, last_layer='layer3'):
+        super().__init__()
+        self.last_layer = last_layer
+        self.model_ft = models.resnet50(pretrained=True)
+        num_ftrs = self.model_ft.fc.in_features
+        # Here the size of each output sample is set to 2.
+        # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
+        # self.model_ft.fc = nn.Linear(num_ftrs, 2)
+        if last_layer == LAYER_3:
+            # num_ftrs = self.model_ft.layer4[0].conv1.in_features
+            # print('num_ftrs: ', num_ftrs)
+            self.model_ft.layer4 = nn.Identity()
+            self.model_ft.avgpool = nn.Identity()
+            self.model_ft.fc = nn.Identity()
+        elif last_layer == LAYER_4:
+            # num_ftrs = self.model_ft.avgpool.in_features
+            # print('num_ftrs: ', num_ftrs)
+            self.model_ft.avgpool = nn.Identity()#Identity()
+            self.model_ft.fc = nn.Identity()#Identity()
+            
+    
+    def forward(self, x):
+        x = self.model_ft(x)
+        if self.last_layer == LAYER_3:
+            b, _ = x.size()
+            x = x.view(b, 1024, 14, 14)
+        elif self.last_layer == LAYER_4:
+            b, _ = x.size()
+            x = x.view(b, 2048, 7, 7)
+        return x
+
 if __name__ ==  '__main__':
-    model = Backbone2DResNet('resnet50','layer3',num_trainable_layers=0)
+    # model = Backbone2DResNet('resnet50','layer4',num_trainable_layers=8)
+    model = MyResNet(last_layer=LAYER_4)
     params_num = count_parameters(model)
     print("Num parameters: ", params_num)
     # print(model)

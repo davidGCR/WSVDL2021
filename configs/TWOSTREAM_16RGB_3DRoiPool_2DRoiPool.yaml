@@ -14,9 +14,9 @@
 MODEL:
   NAME: TWO_STREAM_CFAM_CONFIG
   INFERENCE:
-    ACTIVE: True
+    ACTIVE: False
     REPETITIONS: 1
-    CHECKPOINT_PATH: C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/save_at_epoch-29.chk
+    CHECKPOINT_PATH: None #C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/save_at_epoch-29.chk
   RESTORE_TRAIN:
     ACTIVE: False
     CHECKPOINT_PATH: None
@@ -42,7 +42,7 @@ MODEL:
     ACTIVATE: True
     NAME: resnet50
     FINAL_ENDPOINT: layer3
-    NUM_TRAINABLE_LAYERS: 0
+    NUM_TRAINABLE_LAYERS: -1
     WITH_ROIPOOL: True
   _CFAM_BLOCK:
     ACTIVATE: True
