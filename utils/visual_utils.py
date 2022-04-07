@@ -36,7 +36,8 @@ def draw_boxes(img, boxes, scores=None, tags=None, ids=None, line_thick=1, line_
                 text = "{:.3f}".format(scores[i])
                 cv2.putText(img, text, (x1, y1 - 7), cv2.FONT_ITALIC, 0.5, line_color[i], line_thick)
             if ids is not None:
-                text = "{}".format(int(ids[i]))
+                # text = "{}".format(int(ids[i]))
+                text = "{}".format(ids[i])
                 cv2.putText(img, text, (x1, y1 + 15), cv2.FONT_ITALIC, 0.5, line_color[i], line_thick)
         else:
             cv2.rectangle(img, (x1,y1), (x2,y2), color[line_color], line_thick)
@@ -45,7 +46,8 @@ def draw_boxes(img, boxes, scores=None, tags=None, ids=None, line_thick=1, line_
                 
                 cv2.putText(img, text, (x1, y1 - 7), cv2.FONT_ITALIC, 0.5, color[line_color], line_thick)
             if ids is not None:
-                text = "{}".format(int(ids[i]))
+                # text = "{}".format(int(ids[i]))
+                text = "{}".format(ids[i])
                 cv2.putText(img, text, (x1, y1 + 15), cv2.FONT_ITALIC, 0.5, color[line_color], line_thick)
     return img
 

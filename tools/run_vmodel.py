@@ -20,20 +20,36 @@ from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
 
 from tqdm import tqdm
+import argparse
 
-def main(h_path):
+def main():
+    if args.env == "windows":
+        h_path = HOME_WINDOWS
+    elif args.env == "ubuntu":
+        h_path = HOME_UBUNTU
+    elif args.env == "colab":
+        h_path = HOME_COLAB
+    print('environment,', args.env)
+    print('cf,', args.cf)
+    print('rt_model,', args.rt_model)
+    
     # Setup cfg.
     cfg = get_cfg_defaults()
     # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
-    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_3DResNet_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_X3D_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool-MIL.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_CCTVFights_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_MIL.yaml")
+    
+    cfg.merge_from_file(WORK_DIR / "configs/{}.yaml".format(args.cf))
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
+    if args.rt_model:
+        cfg.MODEL.RESTORE_TRAIN.ACTIVE == True
+        cfg.MODEL.RESTORE_TRAIN.CHECKPOINT_PATH == args.rt_model
     # print(cfg)
 
     # from debug_model import debug_model, see_models
@@ -247,6 +263,14 @@ def main(h_path):
                 os.path.join(chk_path_folder,"save_at_epoch-"+str(epoch)+".chk"))
 
 if __name__=='__main__':
-    h_path = HOME_COLAB
+    # h_path = HOME_WINDOWS
     torch.autograd.set_detect_anomaly(True)
-    main(h_path)
+    files = "\n\n"+"\n -".join([f for f in os.listdir('configs/') if Path(f).suffix == '.yaml'])
+    parser = argparse.ArgumentParser(description='Train the TwoStream model')
+    parser.add_argument('--env', type=str, required=True, help='enviroment where execute experiments.')
+    parser.add_argument('--cf', type=str, required=True, help='Configuration file name available: {}'.format(files))
+    parser.add_argument('--rt_model', type=str, help='Path to checkpoint to restore training.')
+    args = parser.parse_args()
+    
+
+    main()

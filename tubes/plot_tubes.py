@@ -54,7 +54,7 @@ def plot_tubes(paths, tubes, wait=200):
             frame = draw_boxes(frame,
                                 box_tubes[:, :4],
                                 # scores=tube_scores,
-                                ids=tube_ids,
+                                ids=tube_scores,
                                 line_thick=2, 
                                 line_color=colors)
         images_to_video.append(frame)
