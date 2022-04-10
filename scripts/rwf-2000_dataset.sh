@@ -41,7 +41,8 @@ id="10nC0l_JQ3sVzoJlHpJpkhZfhe_wHLwFO"
 gdown --id $id
 filename="RWF-2000.zip"
 src="/content/${filename}"
-dst="/content/DATASETS/ActionTubesV2Scored"
+mkdir '/content/DATASETS/ActionTubesV2Scored/RWF-2000'
+dst="/content/DATASETS/ActionTubesV2Scored/RWF-2000"
 f_name="${dst}/${filename}"
 cp -r "$src" $dst
 unzip -q $f_name -d $dst
