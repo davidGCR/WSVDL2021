@@ -21,6 +21,7 @@ class VideoDemo(data.Dataset):
                  tub_file=None, 
                  ped_file=None, 
                  vizualize_tubes:bool=False,
+                 save_folder=None,
                  vizualize_keyframe:bool=False,
                  transformations=None):
         """Dataset to load/extract tubes from a single video
@@ -33,8 +34,10 @@ class VideoDemo(data.Dataset):
             tub_file (_type_, optional): Path to json file with precomputed tubes. Defaults to None.
             ped_file (_type_, optional): Path to json file with person detections. Defaults to None.
             vizualize_tubes (bool, optional): Flac to vizualize online tube generation. Defaults to False.
+            save_folder (str, optional): Folder to save tubes plots. Defaults to None.
             transformations (dict, optional): Spatial transformations for two stream model. Defaults to False.
         """
+        self.save_folder = save_folder
         self.cfg = cfg
         self.path = Path(path)
         self.check_file(self.path)
@@ -122,10 +125,12 @@ class VideoDemo(data.Dataset):
         names = [str(self.path/self.frames[i]) for i in indices]
         return indices, names
     
-    def plot_best_tube(self, index):
+    def plot_best_tube(self, indices_to_plot):
         tubes = JSON_2_tube(str(self.tub_file))
         indices, names = self.temporal_step()
-        plot_tubes(names, [tubes[index]])
+        tp = [tubes[i] for i in indices_to_plot]
+        
+        plot_tubes(names, tp, save_folder=self.save_folder)
         
     def gen_tubes(self):
         tubes = None
@@ -134,7 +139,8 @@ class VideoDemo(data.Dataset):
             tubes = JSON_2_tube(str(self.tub_file))
             indices, names = self.temporal_step()
             if self.vizualize_tubes:
-                plot_tubes(names, tubes)
+                plot_tubes(names, tubes, save_folder=self.save_folder)
+                
         else:
             print('Extracting tubes...')
             if self.ped_file:

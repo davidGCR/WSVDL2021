@@ -232,74 +232,90 @@ def demo():
     # _6-B11R9FJM_2 (TP)
     # 0_DzLlklZa0_5 (TN)
     transforms_config_train, transforms_config_val = two_stream_transforms(cfg.TUBE_DATASET.KEYFRAME_STRATEGY)
-    set_ = 'val'
-    video = '6Rl7q_kXYbg_0'
-    # set_ = 'train'
-    # video = '0_DzLlklZa0_5'
-    vd = VideoDemo(
-        cfg=cfg.TUBE_DATASET,
-        path=r"C:\Users\David\Desktop\DATASETS\RWF-2000\frames\{}\Fight\{}".format(set_, video),
-        tub_file=r"C:\Users\David\Desktop\DATASETS\ActionTubesV2Scored\RWF-2000\{}\Fight\{}.json".format(set_, video),
-        tub_cfg=TUBE_BUILD_CONFIG,
-        mot_cgf=MOTION_SEGMENTATION_CONFIG,
-        ped_file=r"C:\Users\David\Desktop\DATASETS\PersonDetections\RWF-2000\{}\Fight\{}.json".format(set_, video),
-        vizualize_tubes=False,
-        # vizualize_keyframe=True,
-        transformations=transforms_config_val
-    )
-    
-    loader = DataLoader(vd,
-                        batch_size=1,
-                        # shuffle=False,
-                        num_workers=1,
-                        # pin_memory=True,
-                        collate_fn=my_collate_video,
-                        # sampler=get_sampler(train_dataset.labels),
-                        drop_last=False
-                        )
-    
     _device = get_torch_device()
     model = TwoStreamVD_Binary_CFam(cfg.MODEL).to(_device)
     model, _, _, _, _ = load_checkpoint(model, _device, None, cfg.MODEL.INFERENCE.CHECKPOINT_PATH)
     # model = TwoStreamVD_Binary_CFam_Eval(model)
     # print(model)
     model.eval()
-    tube_scores = []
-    for batch_idx, (box, tube_images, keyframe) in enumerate(loader):
-        print("\nbatch: ", batch_idx)
-        
-        print("box: ", box.size(), '\n', box)
-        print("tube_images: ", tube_images.size())
-        print("keyframe: ", keyframe.size())
-        
-        box, tube_images = box.to(_device), tube_images.to(_device)
-        keyframe = keyframe.to(_device)
-        with torch.no_grad():
-            outputs = model(tube_images, keyframe, box, cfg.TUBE_DATASET.NUM_TUBES)
-            outputs = outputs.unsqueeze(dim=0) #tensor([[0.0735, 0.1003]]) torch.Size([b, 2])
-            print('outputs: ', outputs)
-            max_scores, predicted = torch.max(outputs, 1)
-            print('max_scores: ', max_scores)
-            print('predicted: ', predicted)
-            
-            probs = torch.sigmoid(outputs)
-            print("probs: ", probs, probs.size())
-            
-            sm = torch.nn.Softmax(dim=1)
-            probabilities = sm(outputs)
-            print("probs softmax: ", probabilities, probabilities.size())
-            
-            tube_scores.append(probabilities)
     
-    tube_scores = torch.cat(tube_scores, dim=0)
-    print("tube_scores: ", tube_scores, tube_scores.size())
-    t_max_scores, indices = torch.max(tube_scores, 0)
-    print('t_max_scores: ', t_max_scores)
-    print('indices: ', indices)
-    indice_max_tube = indices.cpu().numpy().tolist()[1]
-    print('indice_max_tube: ', indice_max_tube)
-    vd.plot_best_tube(indice_max_tube)
+    
+        
+    def iterate(category, set_, video):
+        vd = VideoDemo(
+            cfg=cfg.TUBE_DATASET,
+            path=r"C:\Users\David\Desktop\DATASETS\RWF-2000\frames\{}\{}\{}".format(set_, category, video),
+            tub_file=r"C:\Users\David\Desktop\DATASETS\ActionTubesV2Scored\RWF-2000\{}\{}\{}.json".format(set_, category, video),
+            tub_cfg=TUBE_BUILD_CONFIG,
+            mot_cgf=MOTION_SEGMENTATION_CONFIG,
+            ped_file=r"C:\Users\David\Desktop\DATASETS\PersonDetections\RWF-2000\{}\{}\{}.json".format(set_, category, video),
+            vizualize_tubes=False,
+            save_folder=r"C:\Users\David\Desktop\DATASETS\Vizualizations",
+            # vizualize_keyframe=True,
+            transformations=transforms_config_val
+        )
+        
+        loader = DataLoader(vd,
+                            batch_size=1,
+                            # shuffle=False,
+                            num_workers=1,
+                            # pin_memory=True,
+                            collate_fn=my_collate_video,
+                            # sampler=get_sampler(train_dataset.labels),
+                            drop_last=False
+                            )
+        
+        
+        tube_scores = []
+        for batch_idx, (box, tube_images, keyframe) in enumerate(loader):
+            print("\nbatch: ", batch_idx)
+            
+            print("box: ", box.size(), '\n', box)
+            print("tube_images: ", tube_images.size())
+            print("keyframe: ", keyframe.size())
+            
+            box, tube_images = box.to(_device), tube_images.to(_device)
+            keyframe = keyframe.to(_device)
+            with torch.no_grad():
+                outputs = model(tube_images, keyframe, box, cfg.TUBE_DATASET.NUM_TUBES)
+                outputs = outputs.unsqueeze(dim=0) #tensor([[0.0735, 0.1003]]) torch.Size([b, 2])
+                print('outputs: ', outputs)
+                max_scores, predicted = torch.max(outputs, 1)
+                print('max_scores: ', max_scores)
+                print('predicted: ', predicted)
+                
+                probs = torch.sigmoid(outputs)
+                print("probs: ", probs, probs.size())
+                
+                sm = torch.nn.Softmax(dim=1)
+                probabilities = sm(outputs)
+                print("probs softmax: ", probabilities, probabilities.size())
+                
+                tube_scores.append(probabilities)
+        
+        tube_scores = torch.cat(tube_scores, dim=0)
+        print("tube_scores: ", tube_scores, tube_scores.size())
+        
+        if len(vd) >= 1 or len(vd) <= 3:
+            t_max_scores, indices = torch.max(tube_scores, 0)
+            indice_max_tube = indices.cpu().numpy().tolist()[1]
+            vd.plot_best_tube([indice_max_tube])
+        elif len(vd) > 3:
+            t_max_scores, indices = torch.topk(tube_scores, 3, dim=0)
+            print('t_max_scores: ', t_max_scores)
+            print('indices: ', indices)
+            indice_max_tube = indices[:,1].cpu().numpy().tolist()
+            print('indice_max_tube: ', indice_max_tube)
+            vd.plot_best_tube(indice_max_tube)
 
+    set_ = 'val'
+    category = 'NonFight'
+    videos = ['1AURh0Wj_0', '2qFnVnnZ_0', '4I1DGWsh_0', '2lrARl7utL4_0', '1W8hsVvyKt4_1', '6doZoiaG9PM_1', '7emxm3za_0', '8SmT9rE9_0', '66U2c3YMjOI_0', 'A7FCl8G35Cs_0', 'bW2vHhYbzHM_0']
+    # set_ = 'train'
+    # video = '0_DzLlklZa0_5'
+    for video in videos:
+        iterate(category, set_, video)
+        
 if __name__=='__main__':
     demo()
     

@@ -47,7 +47,7 @@ def main():
     
     cfg.merge_from_file(WORK_DIR / "configs/{}.yaml".format(args.cf))
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
-    if args.rt_model:
+    if args.rt_model is not None:
         cfg.MODEL.RESTORE_TRAIN.ACTIVE == True
         cfg.MODEL.RESTORE_TRAIN.CHECKPOINT_PATH == args.rt_model
     # print(cfg)
@@ -265,10 +265,10 @@ def main():
 if __name__=='__main__':
     # h_path = HOME_WINDOWS
     torch.autograd.set_detect_anomaly(True)
-    files = "\n\n"+"\n -".join([f for f in os.listdir('configs/') if Path(f).suffix == '.yaml'])
+    # files = "\n\n"+"\n -".join([f for f in os.listdir('configs/') if Path(f).suffix == '.yaml'])
     parser = argparse.ArgumentParser(description='Train the TwoStream model')
     parser.add_argument('--env', type=str, required=True, help='enviroment where execute experiments.')
-    parser.add_argument('--cf', type=str, required=True, help='Configuration file name available: {}'.format(files))
+    parser.add_argument('--cf', type=str, required=True)#, help='Configuration file name available: {}'.format(files))
     parser.add_argument('--rt_model', type=str, help='Path to checkpoint to restore training.')
     args = parser.parse_args()
     
