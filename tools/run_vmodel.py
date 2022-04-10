@@ -48,8 +48,8 @@ def main():
     cfg.merge_from_file(WORK_DIR / "configs/{}.yaml".format(args.cf))
     cfg.ENVIRONMENT.DATASETS_ROOT = h_path
     if args.rt_model is not None:
-        cfg.MODEL.RESTORE_TRAIN.ACTIVE == True
-        cfg.MODEL.RESTORE_TRAIN.CHECKPOINT_PATH == args.rt_model
+        cfg.MODEL.RESTORE_TRAIN.ACTIVE = True
+        cfg.MODEL.RESTORE_TRAIN.CHECKPOINT_PATH = args.rt_model
     # print(cfg)
 
     # from debug_model import debug_model, see_models
