@@ -11,14 +11,17 @@ from datasets.CCTVFights_dataset import SequentialDataset
 from torch.utils.data import DataLoader
 from datasets.collate_fn import my_collate
 from sklearn.metrics import average_precision_score
+import torch.nn.functional as F
 
-def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
+def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False, auc_roc=False):
     print('training at epoch: {}'.format(_epoch))
     _model.train()
     losses = AverageMeter()
     accuracies = AverageMeter()
     batch_time = AverageMeter()
     end_time = time.time()
+    # For roc_auc
+    y_true, t_pred = [], []
 
     loop = tqdm(enumerate(_loader), total=len(_loader), leave=False)
     for batch_index, data in loop:
@@ -41,8 +44,14 @@ def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device,
         _optimizer.zero_grad()
         #predict
         outs = _model(video_images, key_frames, boxes, _num_tubes)
+        print('labels: ', labels, labels.size(),  outs, outs.size())
+        _, preds = torch.max(outs, dim=1)
+        probabilities = F.softmax(outs, dim=1)[:, 1]
+        
+        print("preds: ", preds, preds.size())
+        print("probabilities: ", probabilities, probabilities.size())
+        
         #loss
-        # print('labels: ', labels, labels.size(),  outs, outs.size())
         loss = _criterion(outs, labels)
         #accuracy
         acc = _accuracy_fn(outs, labels)

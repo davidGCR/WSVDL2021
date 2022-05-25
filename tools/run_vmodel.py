@@ -189,7 +189,8 @@ def main():
                     criterion,
                     device,
                     cfg.TUBE_DATASET.NUM_TUBES,
-                    calculate_accuracy_2)
+                    calculate_accuracy_2,
+                    True)
                 scheduler.step(val_loss)
                 writer.add_scalar('validation loss', val_loss, epoch)
                 writer.add_scalar('validation accuracy', val_acc, epoch)
