@@ -4,6 +4,7 @@ from utils.utils import AverageMeter, get_number_from_string
 import numpy as np
 import time
 from sklearn.metrics import average_precision_score
+from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
 #validation log  videos
@@ -13,7 +14,7 @@ from datasets.collate_fn import my_collate
 from sklearn.metrics import average_precision_score
 import torch.nn.functional as F
 
-def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False, auc_roc=False):
+def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device, _num_tubes, _accuracy_fn, _verbose=False):
     print('training at epoch: {}'.format(_epoch))
     _model.train()
     losses = AverageMeter()
@@ -21,7 +22,7 @@ def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device,
     batch_time = AverageMeter()
     end_time = time.time()
     # For roc_auc
-    y_true, t_pred = [], []
+    y_true, y_pred = torch.zeros(0,dtype=torch.long, device='cpu'), torch.zeros(0,dtype=torch.long, device='cpu')
 
     loop = tqdm(enumerate(_loader), total=len(_loader), leave=False)
     for batch_index, data in loop:
@@ -44,12 +45,18 @@ def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device,
         _optimizer.zero_grad()
         #predict
         outs = _model(video_images, key_frames, boxes, _num_tubes)
-        print('labels: ', labels, labels.size(),  outs, outs.size())
-        _, preds = torch.max(outs, dim=1)
+        # print('labels: ', labels, labels.size())
+        # print('outs: ', outs, outs.size())
+        # _, preds = torch.max(outs, dim=1)
         probabilities = F.softmax(outs, dim=1)[:, 1]
         
-        print("preds: ", preds, preds.size())
-        print("probabilities: ", probabilities, probabilities.size())
+        # y_true.append(labels.cpu().numpy())
+        # y_pred.append(probabilities.cpu().detach().numpy())
+        y_true = torch.cat([y_true, labels.view(-1).cpu()])
+        y_pred = torch.cat([y_pred, probabilities.view(-1).cpu()])
+        
+        # print("preds: ", preds, preds.size())
+        # print("probabilities: ", probabilities, probabilities.size())
         
         #loss
         loss = _criterion(outs, labels)
@@ -63,8 +70,6 @@ def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device,
         # backward + optimize
         loss.backward()
         _optimizer.step()
-
-        
 
         batch_time.update(time.time() - end_time)
         end_time = time.time()
@@ -86,6 +91,12 @@ def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device,
         loop.set_description(f"Epoch [{_epoch}/{_num_epochs}]")
         loop.set_postfix(loss=loss.item(), acc=acc, time=batch_time.val)
 
+    # print("y_true: ", y_true.size())
+    # print("y_pred: ", y_pred.size())
+
+    roc_auc = roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().detach().numpy())
+    # print("roc_auc: ", roc_auc)
+
     train_loss = losses.avg
     train_acc = accuracies.avg
     time_ = batch_time.avg
@@ -93,7 +104,8 @@ def train(_loader, _epoch, _num_epochs, _model, _criterion, _optimizer, _device,
         'Epoch: [{}]\t'
         'Loss(train): {loss:.4f}\t'
         'Acc(train): {acc:.3f}\t'
-        'Time: {tim:.3f}'.format(_epoch, loss=train_loss, acc=train_acc, tim=time_*batch_time.counter)
+        'ROC_AUC(train): {roc_auc:.4f}\t'
+        'Time: {tim:.3f}'.format(_epoch, loss=train_loss, acc=train_acc, roc_auc=roc_auc, tim=time_*batch_time.counter)
     )
     return train_loss, train_acc, time_
 
@@ -104,6 +116,7 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     # meters
     losses = AverageMeter()
     accuracies = AverageMeter()
+    y_true, y_pred = torch.zeros(0,dtype=torch.long, device='cpu'), torch.zeros(0,dtype=torch.long, device='cpu')
     for _, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
         boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
@@ -119,15 +132,21 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
             loss = _criterion(outputs, labels) if _criterion is not None else 0
             acc = _accuracy_fn(outputs, labels)
+            
+            probabilities = F.softmax(outputs, dim=1)[:, 1]
+            y_true = torch.cat([y_true, labels.view(-1).cpu()])
+            y_pred = torch.cat([y_pred, probabilities.view(-1).cpu()])
         if _criterion is not None:
             losses.update(loss.item(), outputs.shape[0])
         accuracies.update(acc, outputs.shape[0])
+    roc_auc = roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().detach().numpy())
     val_loss = losses.avg
     val_acc = accuracies.avg
     print(
         'Epoch: [{}]\t'
         'Loss(val): {loss:.4f}\t'
-        'Acc(val): {acc:.3f}'.format(_epoch, loss=val_loss, acc=val_acc)
+        'Acc(val): {acc:.3f}\t'
+        'ROC_AUC(val): {roc_auc:.4f}'.format(_epoch, loss=val_loss, acc=val_acc, roc_auc=roc_auc)
     )
     return val_loss, val_acc
 

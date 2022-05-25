@@ -38,7 +38,7 @@ def main():
     # cfg.merge_from_file(WORK_DIR / "configs/ONESTREAM_16RGB_3DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3D_2D_whithoutROILayers.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2D_crop.yaml")
-    # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
+    cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_3DResNet_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_X3D_16RGB_3DRoiPool_2DRoiPool.yaml")
     # cfg.merge_from_file(WORK_DIR / "configs/TWOSTREAM_16RGB_3DRoiPool_2DRoiPool-MIL.yaml")
@@ -189,8 +189,7 @@ def main():
                     criterion,
                     device,
                     cfg.TUBE_DATASET.NUM_TUBES,
-                    calculate_accuracy_2,
-                    True)
+                    calculate_accuracy_2)
                 scheduler.step(val_loss)
                 writer.add_scalar('validation loss', val_loss, epoch)
                 writer.add_scalar('validation accuracy', val_acc, epoch)
