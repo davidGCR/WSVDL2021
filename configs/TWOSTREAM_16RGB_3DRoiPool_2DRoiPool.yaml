@@ -29,7 +29,7 @@ MODEL:
     ACTIVATE: True
     NAME: i3d #i3d, 3dresnet
     FINAL_ENDPOINT: Mixed_4e #'Mixed_5b', #Mixed_4e, so far, only for i3d
-    PRETRAINED_MODEL: 'C:/Users/David/Desktop/LOCAL CODES/WSVDL2021/localdata/DATASETS/Pretrained_Models/rgb_imagenet.pt'
+    PRETRAINED_MODEL: '/content/DATASETS/Pretrained_Models/rgb_imagenet.pt'
     FREEZE_3D: False
     WITH_ROIPOOL: True
   _ROI_LAYER:
@@ -59,7 +59,7 @@ DATA:
   ACTION_TUBES_FOLDER: ActionTubesV2 #ActionTubesV2Scored
 DATALOADER:
   TRAIN_BATCH: 4
-  VAL_BATCH: 4
+  VAL_BATCH: 1
   NUM_WORKERS: 2
   DROP_LAST: True
 

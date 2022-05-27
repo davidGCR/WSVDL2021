@@ -117,7 +117,12 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     losses = AverageMeter()
     accuracies = AverageMeter()
     y_true, y_pred = torch.zeros(0,dtype=torch.long, device='cpu'), torch.zeros(0,dtype=torch.long, device='cpu')
-    for _, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
+    # Init loggers
+    starter = torch.cuda.Event(enable_timing=True)
+    ender = torch.cuda.Event(enable_timing=True)
+    timings=np.zeros((len(_loader),1))
+    
+    for k, data in tqdm(enumerate(_loader), total=len(_loader), leave=False):
         boxes, video_images, labels, paths, key_frames = data
         boxes, video_images = boxes.to(_device), video_images.to(_device)
         labels = labels.to(_device)
@@ -129,7 +134,15 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
         # boxes = None
         # no need to track grad in eval mode
         with torch.no_grad():
+            starter.record()
             outputs = _model(video_images, key_frames, boxes, _num_tubes)
+            ender.record()
+            
+            # wait for GPU sync
+            torch.cuda.synchronize()
+            curr_time = starter.elapsed_time(ender)
+            timings[k] = curr_time
+        
             loss = _criterion(outputs, labels) if _criterion is not None else 0
             acc = _accuracy_fn(outputs, labels)
             
@@ -142,11 +155,16 @@ def val(_loader, _epoch, _model, _criterion, _device, _num_tubes, _accuracy_fn):
     roc_auc = roc_auc_score(y_true.cpu().numpy(), y_pred.cpu().detach().numpy())
     val_loss = losses.avg
     val_acc = accuracies.avg
+    
+    # calculate mean and standard deviation
+    mean_syn = np.sum(timings) / len(_loader)
+    std_syn = np.std(timings)
     print(
         'Epoch: [{}]\t'
         'Loss(val): {loss:.4f}\t'
         'Acc(val): {acc:.3f}\t'
-        'ROC_AUC(val): {roc_auc:.4f}'.format(_epoch, loss=val_loss, acc=val_acc, roc_auc=roc_auc)
+        'ROC_AUC(val): {roc_auc:.4f}'
+        'Time(val): {time:.4f}'.format(_epoch, loss=val_loss, acc=val_acc, roc_auc=roc_auc, time=mean_syn)
     )
     return val_loss, val_acc
 
