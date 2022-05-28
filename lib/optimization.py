@@ -197,7 +197,7 @@ def fps(_loader, _epoch, _model, _device, _num_tubes):
             timings[k] = curr_time
             video_time = time.time()-start_time
             video_fps = 1.0/video_time
-            print('Curr Time: {} \tVideo time: {} \tVideo fps: {}'.format(curr_time, video_time, video_fps))
+            print('\n Curr Time: {} miliseconds\tVideo time: {} seconds\tVideo fps: {}'.format(curr_time, video_time, video_fps))
     
     # calculate mean and standard deviation
     mean_syn = np.sum(timings) / (len(_loader)*16) #time in ms for each frame
