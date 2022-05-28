@@ -10,7 +10,7 @@ from utils.create_log_name import log_name
 from datasets.make_dataset_handler import load_make_dataset, load_make_dataset_UCFCrime2Local
 from datasets.dataloaders import data_with_tubes, data_with_tubes_localization
 
-from lib.optimization import train, val, val_map, validate_long_videos
+from lib.optimization import train, val, val_map, validate_long_videos, fps
 from lib.optimization_mil import train_regressor, val_regressor, val_regressor_UCFCrime2Local
 from lib.accuracy import calculate_accuracy_2, calculate_accuracy_regressor
 
@@ -78,7 +78,7 @@ def main():
                                         train=False,
                                         category=2,
                                         shuffle=False)                           
-        train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
+        train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val, time_val_loader = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
 
         # from debug_tubegen import test_tubegen_CCTVFights_dataset
         # test_tubegen_CCTVFights_dataset(cfg.TUBE_DATASET, transforms_val)
@@ -106,7 +106,7 @@ def main():
                                         train=False,
                                         category=2,
                                         shuffle=False)                           
-            train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
+            train_loader, val_loader, train_dataset, val_dataset, transforms_train, transforms_val, time_val_loader = data_with_tubes(cfg, make_dataset_train, make_dataset_val)
 
     else:
         print("Error: Unrecognized head name!!!")
@@ -190,6 +190,11 @@ def main():
                     device,
                     cfg.TUBE_DATASET.NUM_TUBES,
                     calculate_accuracy_2)
+                fps(time_val_loader,
+                    epoch, 
+                    model,
+                    device,
+                    cfg.TUBE_DATASET.NUM_TUBES)
                 scheduler.step(val_loss)
                 writer.add_scalar('validation loss', val_loss, epoch)
                 writer.add_scalar('validation accuracy', val_acc, epoch)

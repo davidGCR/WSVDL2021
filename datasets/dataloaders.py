@@ -155,7 +155,16 @@ def data_with_tubes(cfg, make_dataset_train, make_dataset_val):
                             collate_fn=my_collate,
                             drop_last=cfg.DATALOADER.DROP_LAST
                             )
-    return train_loader, val_loader, train_dataset, val_dataset, transforms_config_train, transforms_config_val
+        time_val_loader = DataLoader(val_dataset,
+                            batch_size=1,
+                            # shuffle=True,
+                            num_workers=cfg.DATALOADER.NUM_WORKERS,
+                            sampler=get_sampler(val_dataset.labels),
+                            # pin_memory=True,
+                            collate_fn=my_collate,
+                            drop_last=cfg.DATALOADER.DROP_LAST
+                            )
+    return train_loader, val_loader, train_dataset, val_dataset, transforms_config_train, transforms_config_val, time_val_loader
 
 def data_with_tubes_val(cfg, make_dataset_val):
     """Build dataloaders for val sets.
